@@ -1,6 +1,6 @@
 #https://github.com/callummcdougall/ARENA_2.0/tree/main/chapter1_transformers/exercises/part3_indirect_object_identification
 
-from ioi_dataset import IOIDataset
+from dataset import Dataset
 from transformer_lens import HookedTransformer, utils
 from transformer_lens.hook_points import HookPoint
 import einops
@@ -34,7 +34,7 @@ SEQ_POS_TO_KEEP = {
 
 
 def get_heads_and_posns_to_keep(
-    means_dataset: IOIDataset,
+    means_dataset: Dataset,
     model: HookedTransformer,
     circuit: Dict[str, List[Tuple[int, int]]],
     seq_pos_to_keep: Dict[str, str],
@@ -110,7 +110,7 @@ def hook_fn_mask_z(
 
 
 def compute_means_by_template(
-    means_dataset: IOIDataset, 
+    means_dataset: Dataset, 
     model: HookedTransformer
 ) -> Float[Tensor, "layer batch seq head_idx d_head"]:
     '''
@@ -143,7 +143,7 @@ def compute_means_by_template(
 
 def add_mean_ablation_hook(
     model: HookedTransformer, 
-    means_dataset: IOIDataset, 
+    means_dataset: Dataset, 
     circuit: Dict[str, List[Tuple[int, int]]] = CIRCUIT,
     seq_pos_to_keep: Dict[str, str] = SEQ_POS_TO_KEEP,
     is_permanent: bool = True,
