@@ -1,3 +1,7 @@
+from dataset import Dataset
+from jaxtyping import Float
+from torch import Tensor
+
 def logits_to_ave_logit_diff(logits: Float[Tensor, "batch seq d_vocab"], dataset: Dataset, per_prompt=False):
     '''
     Returns logit difference between the correct and incorrect answer.

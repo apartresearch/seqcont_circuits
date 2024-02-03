@@ -8,6 +8,8 @@ from torch import Tensor
 from typing import Dict, Tuple, List
 from jaxtyping import Float, Bool
 
+from metrics import logits_to_ave_logit_diff
+
 """
 see this in Outline of explorer
 
@@ -146,12 +148,12 @@ def add_mean_ablation_hook_MLP(
 
     return model
 
-def mean_ablate_by_lst_MLP(lst, model, orig_score, print_output=True):
+def mean_ablate_by_lst_MLP(lst, model, dataset, dataset_2, orig_score, print_output=True):
     CIRCUIT = {}
     SEQ_POS_TO_KEEP = {}
-    for i in range(len(model.tokenizer.tokenize(prompts_list_2[0]['text']))):
+    for i in range(len(model.tokenizer.tokenize(dataset_2.prompts[0]['text']))):
         CIRCUIT['S'+str(i)] = lst
-        if i == len(model.tokenizer.tokenize(prompts_list_2[0]['text'])) - 1:
+        if i == len(model.tokenizer.tokenize(dataset_2.prompts[0]['text'])) - 1:
             SEQ_POS_TO_KEEP['S'+str(i)] = 'end'
         else:
             SEQ_POS_TO_KEEP['S'+str(i)] = 'S'+str(i)

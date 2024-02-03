@@ -8,6 +8,9 @@ from torch import Tensor
 from typing import Dict, Tuple, List
 from jaxtyping import Float, Bool
 
+from head_ablation_fns import *
+from mlp_ablation_fns import *
+
 def add_mean_ablation_hook_MLP_head(
     model: HookedTransformer,
     means_dataset: Dataset,
@@ -16,9 +19,9 @@ def add_mean_ablation_hook_MLP_head(
 ) -> HookedTransformer:
     CIRCUIT = {}
     SEQ_POS_TO_KEEP = {}
-    for i in range(len(model.tokenizer.tokenize(prompts_list_2[0]['text']))):
+    for i in range(len(model.tokenizer.tokenize(means_dataset.prompts[0]['text']))):
         CIRCUIT['S'+str(i)] = heads_lst
-        if i == len(model.tokenizer.tokenize(prompts_list_2[0]['text'])) - 1:
+        if i == len(model.tokenizer.tokenize(means_dataset.prompts[0]['text'])) - 1:
             SEQ_POS_TO_KEEP['S'+str(i)] = 'end'
         else:
             SEQ_POS_TO_KEEP['S'+str(i)] = 'S'+str(i)
@@ -45,9 +48,9 @@ def add_mean_ablation_hook_MLP_head(
     ########################
     CIRCUIT = {}
     SEQ_POS_TO_KEEP = {}
-    for i in range(len(model.tokenizer.tokenize(prompts_list_2[0]['text']))):
+    for i in range(len(model.tokenizer.tokenize(means_dataset.prompts[0]['text']))):
         CIRCUIT['S'+str(i)] = mlp_lst
-        if i == len(model.tokenizer.tokenize(prompts_list_2[0]['text'])) - 1:
+        if i == len(model.tokenizer.tokenize(means_dataset.prompts[0]['text'])) - 1:
             SEQ_POS_TO_KEEP['S'+str(i)] = 'end'
         else:
             SEQ_POS_TO_KEEP['S'+str(i)] = 'S'+str(i)

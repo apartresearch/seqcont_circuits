@@ -8,7 +8,9 @@ from torch import Tensor
 from typing import Dict, Tuple, List
 from jaxtyping import Float, Bool
 
-def find_circuit_forw(heads_not_ablate=None, mlps_not_ablate=None, orig_score=100, threshold=10):
+from node_ablation_fns import *
+
+def find_circuit_forw(model, dataset, dataset_2, heads_not_ablate=None, mlps_not_ablate=None, orig_score=100, threshold=10):
     # threshold is T, a %. if performance is less than T%, allow its removal
     # we don't ablate the curr circuits
     if heads_not_ablate == []: # Start with full circuit
@@ -59,7 +61,7 @@ def find_circuit_forw(heads_not_ablate=None, mlps_not_ablate=None, orig_score=10
 
     return heads_not_ablate, mlps_not_ablate, new_perc, comp_scores
 
-def find_circuit_backw(heads_not_ablate=None, mlps_not_ablate=None, orig_score=100, threshold=10):
+def find_circuit_backw(model, dataset, dataset_2, heads_not_ablate=None, mlps_not_ablate=None, orig_score=100, threshold=10):
     # threshold is T, a %. if performance is less than T%, allow its removal
     # we don't ablate the curr circuits
     if heads_not_ablate == []: # Start with full circuit
