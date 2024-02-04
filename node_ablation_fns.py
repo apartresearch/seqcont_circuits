@@ -11,7 +11,7 @@ from jaxtyping import Float, Bool
 from head_ablation_fns import *
 from mlp_ablation_fns import *
 
-def add_mean_ablation_hook_MLP_head(
+def add_ablation_hook_MLP_head(
     model: HookedTransformer,
     means_dataset: Dataset,
     heads_lst, mlp_lst,
@@ -29,16 +29,16 @@ def add_mean_ablation_hook_MLP_head(
     model.reset_hooks(including_permanent=True)
 
     # Compute the mean of each head's output on the ABC dataset, grouped by template
-    means = compute_means_by_template(means_dataset, model)
+    means = get_heads_actv_mean(means_dataset, model)
 
     # Convert this into a boolean map
-    heads_and_posns_to_keep = get_heads_and_posns_to_keep(means_dataset, model, CIRCUIT, SEQ_POS_TO_KEEP)
+    components_to_keep = mask_circ_heads(means_dataset, model, CIRCUIT, SEQ_POS_TO_KEEP)
 
     # Get a hook function which will patch in the mean z values for each head, at
     # all positions which aren't important for the circuit
     hook_fn = partial(
-        hook_fn_mask_z,
-        heads_and_posns_to_keep=heads_and_posns_to_keep,
+        hook_func_mask_head,
+        components_to_keep=components_to_keep,
         means=means
     )
 
@@ -56,16 +56,16 @@ def add_mean_ablation_hook_MLP_head(
             SEQ_POS_TO_KEEP['S'+str(i)] = 'S'+str(i)
 
     # Compute the mean of each head's output on the ABC dataset, grouped by template
-    means = compute_means_by_template_MLP(means_dataset, model)
+    means = get_MLPs_actv_mean(means_dataset, model)
 
     # Convert this into a boolean map
-    mlp_outputs_and_posns_to_keep = get_mlp_outputs_and_posns_to_keep(means_dataset, model, CIRCUIT, SEQ_POS_TO_KEEP)
+    components_to_keep = mask_circ_MLPs(means_dataset, model, CIRCUIT, SEQ_POS_TO_KEEP)
 
     # Get a hook function which will patch in the mean z values for each head, at
     # all positions which aren't important for the circuit
     hook_fn = partial(
-        hook_fn_mask_mlp_out,
-        mlp_outputs_and_posns_to_keep=mlp_outputs_and_posns_to_keep,
+        hook_func_mask_mlp_out,
+        components_to_keep=components_to_keep,
         means=means
     )
 

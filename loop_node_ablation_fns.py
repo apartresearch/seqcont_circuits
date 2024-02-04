@@ -29,10 +29,10 @@ def find_circuit_forw(model, dataset, dataset_2, heads_not_ablate=None, mlps_not
             copy_heads_not_ablate.remove((layer, head))
 
             model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
-            ablated_model = add_mean_ablation_hook_MLP_head(model, dataset_2, copy_heads_not_ablate, mlps_not_ablate)
+            ablated_model = add_ablation_hook_MLP_head(model, dataset_2, copy_heads_not_ablate, mlps_not_ablate)
 
             new_logits = ablated_model(dataset.toks)
-            new_score = logits_to_ave_logit_diff(new_logits, dataset)
+            new_score = get_logit_diff(new_logits, dataset)
             new_perc = 100 * new_score / orig_score
             comp_scores[layer] = new_perc
             print(f"(cand circuit / full) %: {new_perc:.4f}")
@@ -47,10 +47,10 @@ def find_circuit_forw(model, dataset, dataset_2, heads_not_ablate=None, mlps_not
             copy_mlps_not_ablate.remove(layer)
 
             model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
-            ablated_model = add_mean_ablation_hook_MLP_head(model, dataset_2, heads_not_ablate, copy_mlps_not_ablate)
+            ablated_model = add_ablation_hook_MLP_head(model, dataset_2, heads_not_ablate, copy_mlps_not_ablate)
 
             new_logits = ablated_model(dataset.toks)
-            new_score = logits_to_ave_logit_diff(new_logits, dataset)
+            new_score = get_logit_diff(new_logits, dataset)
             new_perc = 100 * new_score / orig_score
             comp_scores[(layer, head)] = new_perc
             print(f"(cand circuit / full) %: {new_perc:.4f}")
@@ -77,10 +77,10 @@ def find_circuit_backw(model, dataset, dataset_2, heads_not_ablate=None, mlps_no
             copy_mlps_not_ablate.remove(layer)
 
             model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
-            ablated_model = add_mean_ablation_hook_MLP_head(model, dataset_2, heads_not_ablate, copy_mlps_not_ablate)
+            ablated_model = add_ablation_hook_MLP_head(model, dataset_2, heads_not_ablate, copy_mlps_not_ablate)
 
             new_logits = ablated_model(dataset.toks)
-            new_score = logits_to_ave_logit_diff(new_logits, dataset)
+            new_score = get_logit_diff(new_logits, dataset)
             new_perc = 100 * new_score / orig_score
             comp_scores[layer] = new_perc
             print(f"(cand circuit / full) %: {new_perc:.4f}")
@@ -98,10 +98,10 @@ def find_circuit_backw(model, dataset, dataset_2, heads_not_ablate=None, mlps_no
             copy_heads_not_ablate.remove((layer, head))
 
             model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
-            ablated_model = add_mean_ablation_hook_MLP_head(model, dataset_2, copy_heads_not_ablate, mlps_not_ablate)
+            ablated_model = add_ablation_hook_MLP_head(model, dataset_2, copy_heads_not_ablate, mlps_not_ablate)
 
             new_logits = ablated_model(dataset.toks)
-            new_score = logits_to_ave_logit_diff(new_logits, dataset)
+            new_score = get_logit_diff(new_logits, dataset)
             new_perc = 100 * new_score / orig_score
             comp_scores[(layer, head)] = new_perc
             print(f"(cand circuit / full) %: {new_perc:.4f}")
