@@ -29,10 +29,10 @@ Navigate to the ``notebooks`` directory and open the Jupyter notebooks to see de
 
 #### Running Experiments
 
-Use this command to run node ablation experiments
+Use this command to run node ablation experiments. Lower `--num_samps` if the GPU out-of-memory issues.
 
 ```bash
-
+python run_node_ablation.py --model "gpt2-small" --task "numerals" --num_samps 300 --threshold 20 --one_iter
 ```
 
 #### Citation
