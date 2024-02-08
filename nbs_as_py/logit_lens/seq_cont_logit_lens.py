@@ -63,7 +63,7 @@ def get_decoded_indiv_toks(logits, k=10):
         output_list.append( top_5_at_layer )
     return output_list
 
-"""# loop and get freqs"""
+"""# Test one samp each type"""
 
 prompts = ["1 2 3 4", "one two three four", "January February March April"]
 for test_text in prompts:
@@ -126,191 +126,25 @@ for test_text in prompts:
 
 """# pure seq prompts months"""
 
-def generate_prompts_list(x ,y):
-    words = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-    prompts_list = []
-    for i in range(x, y):
-        prompt_dict = {
-            'S1': words[i],
-            'S2': words[i+1],
-            'S3': words[i+2],
-            'S4': words[i+3],
-            'corr': words[i+4],
-            'incorr': words[i+3],  # this is arbitrary
-            'text': f"{words[i]}{words[i+1]}{words[i+2]}{words[i+3]}"
-        }
-        prompts_list.append(prompt_dict)
-    return prompts_list
+# def generate_prompts_list(x ,y):
+#     words = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+#     prompts_list = []
+#     for i in range(x, y):
+#         prompt_dict = {
+#             'S1': words[i],
+#             'S2': words[i+1],
+#             'S3': words[i+2],
+#             'S4': words[i+3],
+#             'corr': words[i+4],
+#             'incorr': words[i+3],  # this is arbitrary
+#             'text': f"{words[i]}{words[i+1]}{words[i+2]}{words[i+3]}"
+#         }
+#         prompts_list.append(prompt_dict)
+#     return prompts_list
 
-prompts_list = generate_prompts_list(0, 8)
+# prompts_list = generate_prompts_list(0, 8)
 
-for pd in prompts_list:
-    test_text = pd['text']
-    layer_logits = get_logits(test_text)
-    tok_logit_lens = get_decoded_indiv_toks(layer_logits)
-    for i, tokouts in enumerate(tok_logit_lens):
-        print(i-1, tokouts)
-    print('\n')
-
-"""# nonpure digits prompts"""
-
-import pickle
-
-task = "digits"
-prompts_list = []
-
-temps = ['done', 'lost', 'names']
-
-for i in temps:
-    file_name = f'/content/{task}_prompts_{i}.pkl'
-    with open(file_name, 'rb') as file:
-        filelist = pickle.load(file)
-
-    print(filelist[0]['text'])
-    prompts_list += filelist [:10] #768 512
-
-len(prompts_list)
-
-for pd in prompts_list:
-    test_text = pd['text']
-    layer_logits = get_logits(test_text)
-    tok_logit_lens = get_decoded_indiv_toks(layer_logits)
-    for i, tokouts in enumerate(tok_logit_lens):
-        print(i-1, tokouts)
-    print('\n')
-
-num_corr = 0
-for pd in prompts_list:
-    test_text = pd['text']
-    layer_logits = get_logits(test_text)
-    tok_logit_lens = get_decoded_indiv_toks(layer_logits)
-    if int(tok_logit_lens[9][0].replace(' ', '')) < int(tok_logit_lens[10][0].replace(' ', '')):
-        if tok_logit_lens[10][0] == pd['corr']:
-            num_corr += 1
-    # for i, tokouts in enumerate(tok_logit_lens):
-    #     print(i-1, tokouts)
-    # print('\n')
-num_corr
-
-prompts_list[0]['text']
-
-pd['text']
-
-tok_logit_lens[9][0] == pd['corr']
-
-tok_logit_lens[9][0]
-
-tok_logit_lens[10][0]
-
-pd['corr']
-
-tok_logit_lens[8]
-
-tok_logit_lens[9]
-
-"""# nw"""
-
-import pickle
-
-task = "nw"
-prompts_list = []
-
-temps = ['done', 'lost', 'names']
-
-for i in temps:
-    file_name = f'/content/{task}_prompts_{i}.pkl'
-    with open(file_name, 'rb') as file:
-        filelist = pickle.load(file)
-
-    print(filelist[0]['text'])
-    prompts_list += filelist [:10] #768 512
-
-len(prompts_list)
-
-num_words = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
-                 "eleven", "twelve"]
-
-anomolies = []
-num_corr = 0
-for pd in prompts_list:
-    test_text = pd['text']
-    layer_logits = get_logits(test_text)
-    tok_logit_lens = get_decoded_indiv_toks(layer_logits)
-    a = num_words.index(tok_logit_lens[9][0].replace(' ', ''))
-    b= num_words.index(tok_logit_lens[10][0].replace(' ', ''))
-    if int(a) < int(b):
-        if tok_logit_lens[10][0] == pd['corr']:
-            num_corr += 1
-        else:
-            anomolies.append(pd)
-    else:
-            anomolies.append(pd)
-    for i, tokouts in enumerate(tok_logit_lens):
-        print(i-1, tokouts)
-    print('\n')
-
-num_corr
-
-anomolies
-
-for pd in anomolies:
-    test_text = pd['text']
-    layer_logits = get_logits(test_text)
-    tok_logit_lens = get_decoded_indiv_toks(layer_logits)
-    for i, tokouts in enumerate(tok_logit_lens):
-        print(i-1, tokouts)
-    print('\n')
-
-"""# nw 1536- 10 ten anomoly"""
-
-import pickle
-
-task = "nw"
-prompts_list = []
-
-temps = ['done', 'lost', 'names']
-
-for i in temps:
-    file_name = f'/content/{task}_prompts_{i}.pkl'
-    with open(file_name, 'rb') as file:
-        filelist = pickle.load(file)
-
-    print(filelist[0]['text'])
-    prompts_list += filelist [:512] #768 512
-
-len(prompts_list)
-
-num_words = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
-                 "eleven", "twelve"]
-
-anomolies = []
-num_corr = 0
-for pd in prompts_list:
-    test_text = pd['text']
-    layer_logits = get_logits(test_text)
-    tok_logit_lens = get_decoded_indiv_toks(layer_logits)
-    a = num_words.index(tok_logit_lens[9][0].replace(' ', ''))
-    b= num_words.index(tok_logit_lens[10][0].replace(' ', ''))
-    if int(a) < int(b):
-        if tok_logit_lens[10][0] == pd['corr']:
-            num_corr += 1
-        else:
-            anomolies.append(pd)
-    else:
-            anomolies.append(pd)
-    # for i, tokouts in enumerate(tok_logit_lens):
-    #     print(i-1, tokouts)
-    # print('\n')
-
-pd
-
-tok_logit_lens
-
-num_corr
-
-# anomolies
-
-# for pd in anomolies:
+# for pd in prompts_list:
 #     test_text = pd['text']
 #     layer_logits = get_logits(test_text)
 #     tok_logit_lens = get_decoded_indiv_toks(layer_logits)
@@ -318,7 +152,7 @@ num_corr
 #         print(i-1, tokouts)
 #     print('\n')
 
-"""# nw- 1536 prompts"""
+"""# nw- 1536 prompts, among words"""
 
 import pickle
 
@@ -346,6 +180,13 @@ for pd in prompts_list:
     test_text = pd['text']
     layer_logits = get_logits(test_text)
     tok_logit_lens = get_decoded_indiv_toks(layer_logits)
+
+    """
+    Check if the 8th layer's predicted token is the sequence member just "one before"
+    the correct next sequence member output found in the ninth layer
+
+    Use `try` because when indexing, the output may not be a seq member of the right type!
+    """
     try:
         a = num_words.index(tok_logit_lens[9][0].replace(' ', ''))
         b= num_words.index(tok_logit_lens[10][0].replace(' ', ''))
@@ -364,11 +205,7 @@ for pd in prompts_list:
 
 num_corr
 
-len(prompts_list)
-
-anomolies[0]
-
-anomolies[-1]
+"""Do a quick scan of what prompts are anomolies in which 8th layer output is not just "the seq member one before" the 9th layer output."""
 
 for pd in anomolies[:2]:
     test_text = pd['text']
@@ -385,8 +222,6 @@ for pd in anomolies[-2:]:
     for i, tokouts in enumerate(tok_logit_lens):
         print(i-1, tokouts)
     print('\n')
-
-
 
 """# months 1536"""
 
@@ -415,9 +250,16 @@ for pd in prompts_list:
     test_text = pd['text']
     layer_logits = get_logits(test_text)
     tok_logit_lens = get_decoded_indiv_toks(layer_logits)
+
+    """
+    Check if the 8th layer's predicted token is the sequence member just "one before"
+    the correct next sequence member output found in the ninth layer
+
+    Use `try` because when indexing, the output may not be a seq member of the right type!
+    """
     try:
         a = num_words.index(tok_logit_lens[9][0].replace(' ', ''))
-        b= num_words.index(tok_logit_lens[10][0].replace(' ', ''))
+        b = num_words.index(tok_logit_lens[10][0].replace(' ', ''))
         if int(a) < int(b):
             if tok_logit_lens[10][0] == pd['corr']:
                 num_corr += 1
@@ -433,11 +275,7 @@ for pd in prompts_list:
 
 num_corr
 
-len(prompts_list)
-
-anomolies[0]
-
-anomolies[-1]
+"""Do a quick scan of what prompts are anomolies in which 8th layer output is not just "the seq member one before" the 9th layer output."""
 
 for pd in anomolies[:2]:
     test_text = pd['text']
@@ -455,11 +293,7 @@ for pd in anomolies[-2:]:
         print(i-1, tokouts)
     print('\n')
 
-
-
 """# numerals 1536"""
-
-import pickle
 
 task = "digits"
 prompts_list = []
@@ -482,6 +316,13 @@ for pd in prompts_list:
     test_text = pd['text']
     layer_logits = get_logits(test_text)
     tok_logit_lens = get_decoded_indiv_toks(layer_logits)
+
+    """
+    Check if the 8th layer's predicted token is the sequence member just "one before"
+    the correct next sequence member output found in the ninth layer
+
+    Use `try` because when indexing, the output may not be a seq member of the right type!
+    """
     try:
         a = tok_logit_lens[9][0].replace(' ', '')
         b= tok_logit_lens[10][0].replace(' ', '')
@@ -497,15 +338,10 @@ for pd in prompts_list:
     # for i, tokouts in enumerate(tok_logit_lens):
     #     print(i-1, tokouts)
     # print('\n')
-num_corr
 
 num_corr
 
-len(prompts_list)
-
-anomolies[0]
-
-anomolies[-1]
+"""Do a quick scan of what prompts are anomolies in which 8th layer output is not just "the seq member one before" the 9th layer output."""
 
 for pd in anomolies[:2]:
     test_text = pd['text']
