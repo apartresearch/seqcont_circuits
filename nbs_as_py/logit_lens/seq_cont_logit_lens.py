@@ -9,13 +9,9 @@ Original file is located at
 # Setup
 """
 
-import json
 from transformers import AutoModelForCausalLM, AutoTokenizer
-# from transformers import BloomTokenizerFast
 import torch as t
-from torch import nn
 import torch.nn.functional as F
-import numpy as np
 
 model_name = 'gpt2'
 device = 'cuda:0' if t.cuda.is_available() else 'cpu'
@@ -34,10 +30,8 @@ def actvs_to_logits(hidden_states):
     for i, h in enumerate(hidden_states):
         h_last_tok = h[:, -1, :]
         if i == len(hidden_states) - 1:
-            ln_h_last_tok = h_last_tok
-        else:
-            ln_h_last_tok = model.transformer.ln_f(h_last_tok)  # apply layer norm as not in last
-        logits = t.einsum('ab,cb->ac', model.lm_head.weight, ln_h_last_tok)
+            h_last_tok = model.transformer.ln_f(h_last_tok)  # apply layer norm as not in last
+        logits = t.einsum('ab,cb->ac', model.lm_head.weight, h_last_tok)
         layer_logits_list.append(logits)
     return layer_logits_list
 
@@ -48,14 +42,14 @@ def get_logits(input_text):
     logits = t.stack(logits).squeeze(-1)
     return logits
 
-def get_decoded_indiv_toks(logits, k=10):
+def get_decoded_indiv_toks(layer_logits, k=10):
     """
     i is the layer (from before to last).
     layer_logits[i] are the scores for each token in vocab dim for the ith unembedded layer
     j is the top 5
     """
     output_list = []
-    for i, layer in enumerate(logits):
+    for i, layer in enumerate(layer_logits):
         top_5_at_layer = []
         sorted_token_ids = F.softmax(layer_logits[i],dim=-1).argsort(descending=True)
         for j in range(5):  # loop to separate them in a list, rather than concat into one str
