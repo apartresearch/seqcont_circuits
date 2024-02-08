@@ -44,11 +44,8 @@ if __name__ == "__main__":
         prompts_list += filelist [:num_samps_per_ptype]
 
     #### Run logit lens on dataset ####
-    print(1)
 
-    if task == "numerals":
-        print(1)
-    elif task == "numwords":
+    if task == "numwords":
         num_words = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
                  "eleven", "twelve"]
     elif task == "months":
