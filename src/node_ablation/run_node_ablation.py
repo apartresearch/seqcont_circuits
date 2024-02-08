@@ -10,7 +10,6 @@ import json
 import argparse
 
 from dataset import Dataset
-from generate_data import *
 from metrics import *
 from head_ablation_fns import *
 from mlp_ablation_fns import *
@@ -50,7 +49,7 @@ if __name__ == "__main__":
 
     for i in prompt_types:
         # file_name = f'/content/seqcont_circ_expms/data/{task}/{task}_prompts_{i}.pkl'
-        file_name = f'data/{task}/{task}_prompts_{i}.pkl'
+        file_name = f'../../data/{task}/{task}_prompts_{i}.pkl'
         with open(file_name, 'rb') as file:
             filelist = pickle.load(file)
 
@@ -64,7 +63,7 @@ if __name__ == "__main__":
     dataset = Dataset(prompts_list, pos_dict, model.tokenizer)
 
     # file_name = f'/content/seqcont_circ_expms/data/{task}/randDS_{task}.pkl'
-    file_name = f'data/{task}/randDS_{task}.pkl'
+    file_name = f'../../data/{task}/randDS_{task}.pkl'
     with open(file_name, 'rb') as file:
         prompts_list_2 = pickle.load(file)
 
