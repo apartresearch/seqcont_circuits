@@ -46,6 +46,50 @@ if __name__ == "__main__":
     #### Run logit lens on dataset ####
     print(1)
 
+    if task == "numerals":
+        print(1)
+    elif task == "numwords":
+        num_words = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+                 "eleven", "twelve"]
+    elif task == "months":
+        num_words = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    
+    anomolies = []
+    num_corr = 0
+    for pd in prompts_list:
+        test_text = pd['text']
+        # layer_logits = get_logits(test_text)
+        # tok_logit_lens = get_decoded_indiv_toks(layer_logits)
+        layer_logits = get_logits(model, tokenizer, device, test_text)
+        tok_logit_lens = get_decoded_indiv_toks(tokenizer, layer_logits)
+
+        """
+        Check if the 8th layer's predicted token is the sequence member just "one before"
+        the correct next sequence member output found in the ninth layer
+
+        Use `try` because when indexing, the output may not be a seq member of the right type!
+        """
+        try:
+            if task == "numerals":
+                a = tok_logit_lens[9][0].replace(' ', '')
+                b= tok_logit_lens[10][0].replace(' ', '')
+            else:   
+                a = num_words.index(tok_logit_lens[9][0].replace(' ', ''))
+                b= num_words.index(tok_logit_lens[10][0].replace(' ', ''))
+            if int(a) < int(b):
+                if tok_logit_lens[10][0] == pd['corr']:
+                    num_corr += 1
+                else:
+                    anomolies.append(pd)
+            else:
+                    anomolies.append(pd)
+        except:
+            anomolies.append(pd)
+        # for i, tokouts in enumerate(tok_logit_lens):
+        #     print(i-1, tokouts)
+        # print('\n')
+
+    print(num_corr)
 
     # save to JSON
     # circuit_dict = {

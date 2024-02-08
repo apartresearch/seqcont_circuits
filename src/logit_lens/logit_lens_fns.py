@@ -22,7 +22,8 @@ def actvs_to_logits(model, hidden_states):
 def get_logits(model, tokenizer, device, input_text):
     token_ids = tokenizer.encode(input_text, return_tensors='pt').to(device)
     outputs = model(token_ids, output_hidden_states=True)
-    logits = actvs_to_logits(outputs.hidden_states)
+    # logits = actvs_to_logits(outputs.hidden_states)
+    logits = actvs_to_logits(model, outputs.hidden_states)
     logits = t.stack(logits).squeeze(-1)
     return logits
 
