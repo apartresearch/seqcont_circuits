@@ -99,12 +99,10 @@ def viz_attn_pat(
                 #     ax.add_patch(rect)
 
     if savePlotName != '':
-        plt.savefig(savePlotName + '.png', bbox_inches='tight')
-
-        # circ_file_name = f'new_results/{task}_circuit_thres_{threshold}.json'
-        # directory = os.path.dirname(circ_file_name)
+        # file_name = f'new_results/savePlotName + '.png'
+        # directory = os.path.dirname(file_name)
         # if not os.path.exists(directory):
         #     os.makedirs('new_results', exist_ok=True)
-        # with open(circ_file_name, 'w') as json_file:
-        #     json.dump(circuit_dict, json_file, indent=4)
+        plt.savefig(savePlotName + '.png', bbox_inches='tight')
+        
     plt.show()

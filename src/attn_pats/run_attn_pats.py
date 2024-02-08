@@ -6,7 +6,6 @@ python run_attn_pats.py --model "gpt2-small" --task "numerals" --num_samps 300
 """
 import os
 import pickle
-import json
 import argparse
 from transformer_lens import HookedTransformer
 
@@ -65,6 +64,7 @@ if __name__ == "__main__":
         local_cache,
         layer, 
         head_ind,
+        task,
         highlightLines = 'early',
         savePlotName = f'attnpat{layer}_{head_ind}_{task}'
     )
