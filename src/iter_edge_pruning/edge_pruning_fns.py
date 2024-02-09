@@ -1,5 +1,4 @@
 import torch as t
-from fancy_einsum import einsum
 from torch import Tensor
 from jaxtyping import Float
 from typing import List, Optional, Callable, Tuple
