@@ -1,6 +1,5 @@
 import torch as t
 from fancy_einsum import einsum
-import tqdm.notebook as tqdm
 from torch import Tensor
 from jaxtyping import Float
 from typing import List, Optional, Callable, Tuple
@@ -106,7 +105,7 @@ def circ_path_patch_head_to_heads(
 
     senders = [tup for tup in circuit if tup[0] < receiver_heads[0][0]]  # senders are in layer before receivers
 
-    for (sender_layer, sender_head) in tqdm(senders):
+    for (sender_layer, sender_head) in senders:
         ### 2. Frozen Clean Run with sender node patched from Corrupted Run ###
         hook_fn = partial(
             patch_head_vectors,
@@ -255,7 +254,7 @@ def circ_path_patch_head_to_mlp(
         )
 
     senders = [tup for tup in circuit if tup[0] < receiver_layers[0]]
-    for (sender_layer, sender_head) in tqdm(senders):
+    for (sender_layer, sender_head) in senders:
         ### 2. Frozen Clean Run with sender node patched from Corrupted Run ###
         hook_fn = partial(
             patch_head_vectors,
@@ -402,7 +401,7 @@ def get_path_patch_head_to_final_resid_post(
         return_type=None
     )
 
-    for (sender_layer, sender_head) in tqdm(circuit):
+    for (sender_layer, sender_head) in circuit:
         ### 2. Frozen Clean Run with sender node patched from Corrupted Run ###
         hook_fn = partial(
             patch_head_vectors,
