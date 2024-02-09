@@ -36,6 +36,7 @@ def get_top_preds_moredata(
     answer_str_tokens = model.to_str_tokens(answer, prepend_bos=False)
     prompt_length = len(prompt_str_tokens)
     answer_length = len(answer_str_tokens)
+    logits = model(tokens)
     if logits.shape[0] == 1:
         logits = logits.squeeze(0)
     probs = logits.softmax(dim=-1)
