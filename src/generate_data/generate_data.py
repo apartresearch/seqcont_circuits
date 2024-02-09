@@ -1,19 +1,8 @@
-import pickle
 import random
 
 import torch
 from typing import Optional
 import copy
-
-# from transformer_lens import HookedTransformer
-
-# model = HookedTransformer.from_pretrained(
-#     "gpt2-small",
-#     center_unembed=True,
-#     center_writing_weights=True,
-#     fold_ln=True,
-#     refactor_factored_attn_matrices=True,
-# )
 
 def get_top_preds_moredata(
     prompt: str,

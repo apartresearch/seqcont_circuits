@@ -18,6 +18,10 @@ import torch
 from typing import Optional
 import copy
 
+import pickle
+from google.colab import files
+import matplotlib.pyplot as plt
+
 import transformer_lens.utils as utils  # for test prompts
 from transformer_lens import HookedTransformer
 torch.set_grad_enabled(False)
