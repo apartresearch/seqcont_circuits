@@ -35,16 +35,13 @@ After navigating to the `src/node_ablation` folder, use this command to run node
 python run_node_ablation.py --model "gpt2-small" --task "numerals" --num_samps 512 --threshold 20 --one_iter
 ```
 
-After navigating to the `src/logit_lens` folder, use this command to run logit_lens experiments. Lower `--num_samps` if one encounters GPU out-of-memory issues. An A100 is recommended. If an issue such as `RuntimeError: "LayerNormKernelImpl" not implemented for 'Half'`, it could be due to the GPU not being powerful enough.
-
-```bash
-python run_logit_lens.py --model "gpt2" --task "numerals" --num_samps 512
-```
-
-Other commands include:
+Similarly, the other files can be run by naviating to their respective sub-folder in `src`. These other commands include:
 
 ```bash
 python run_gen_data.py --model "gpt2" 
+
+# If an issue such as `RuntimeError: "LayerNormKernelImpl" not implemented for 'Half'`, it could be due to the GPU not being powerful enough.
+python run_logit_lens.py --model "gpt2" --task "numerals" --num_samps 512
 ```
 
 #### Citation
