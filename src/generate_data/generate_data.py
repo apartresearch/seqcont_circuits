@@ -60,24 +60,23 @@ def get_top_preds_moredata(
 
 ######
 def generate_prompts_list(x, y, words, verb):
-    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-    month_to_num = {
-    'January': 'one', 'February': 'two', 'March': 'three', 'April': 'four', 'May': 'five', 'June': 'six',
-    'July': 'seven', 'August': 'eight', 'September': 'nine', 'October': 'ten', 'November': 'eleven', 'December': 'twelve'
-    }
-    months = [month_to_num[i] for i in months]
+    """
+    We generate the numwords first as it's the least likely to have prompts that meet our prob bound conds for corr answer vs incorr answer.
+    We then use this template for months and numerals by just replacing the numwords seq member and checking if prob bound conds still hold, filtering out those that don't.
+    """
+    numwords = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve']
     prompts_list = []
     for j in range(1024): # this must come first else 1 2 3 overrepresented!
         for i in range(x, y):
             rand_words = random.sample(words, k=5)
             prompt_dict = {
-                'S1': months[i],
-                'S2': months[i+1],
-                'S3': months[i+2],
-                'S4': months[i+3],
-                'corr': f" {months[i+4]}",
-                'incorr': f" {months[i+3]}",
-                'text': f"{rand_words[0]} was {verb} in {months[i]}. {rand_words[1]} was {verb} in {months[i+1]}. {rand_words[2]} was {verb} in {months[i+2]}. {rand_words[3]} was {verb} in {months[i+3]}. {rand_words[4]} was {verb} in",
+                'S1': numwords[i],
+                'S2': numwords[i+1],
+                'S3': numwords[i+2],
+                'S4': numwords[i+3],
+                'corr': f" {numwords[i+4]}",
+                'incorr': f" {numwords[i+3]}",
+                'text': f"{rand_words[0]} was {verb} in {numwords[i]}. {rand_words[1]} was {verb} in {numwords[i+1]}. {rand_words[2]} was {verb} in {numwords[i+2]}. {rand_words[3]} was {verb} in {numwords[i+3]}. {rand_words[4]} was {verb} in",
             }
             prompts_list.append(prompt_dict)
     return prompts_list

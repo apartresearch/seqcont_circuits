@@ -71,9 +71,10 @@ if __name__ == "__main__":
 
     #### Get orig score ####
     model.reset_hooks(including_permanent=True)
-    ioi_logits_original = model(dataset.toks)
-    orig_score = get_logit_diff(ioi_logits_original, dataset)
+    logits_original = model(dataset.toks)
+    orig_score = get_logit_diff(logits_original, dataset)
     # print(orig_score)
+    del(logits_original)
 
     ##############
     ### Node Ablation Iteration ###

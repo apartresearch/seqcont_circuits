@@ -1,5 +1,4 @@
-from graphviz import Digraph, Source
-from IPython.display import display
+from graphviz import Digraph
 
 def plot_graph_adjacency_qkv(head_to_head_adjList, mlp_to_mlp_adjList, head_to_mlp_adjList,
                              mlp_to_head_adjList, heads_to_resid, mlps_to_resid,
@@ -69,9 +68,6 @@ def plot_graph_adjacency_qkv(head_to_head_adjList, mlp_to_mlp_adjList, head_to_m
     loop_adjList(mlp_to_head_adjList)
     loop_adjList(heads_to_resid)
     loop_adjList(mlps_to_resid)
-
-    # Display the graph in Colab
-    # display(Source(dot.source))
 
     # Save the graph to a file
     dot.format = 'png'  # You can change this to 'pdf', 'png', etc. based on your needs

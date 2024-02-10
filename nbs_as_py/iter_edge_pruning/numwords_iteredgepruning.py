@@ -24,6 +24,7 @@ task = "numwords"
 heads_not_ablate = [(0, 1), (1, 5), (4, 4), (4, 10), (5, 8), (6, 1), (6, 6), (6, 10), (7, 2), (7, 6), (7, 11), (8, 1), (8, 6), (8, 8), (8, 9), (8, 11), (9, 1), (9, 5), (9, 7)]
 mlps_not_ablate = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
+threshold = 0.8
 save_files = True
 load_graph_files = False
 run_on_other_tasks = True
@@ -82,6 +83,7 @@ from loop_node_ablation_fns import *
 # %cd /content/seqcont_circuits/src/iter_edge_pruning
 
 from edge_pruning_fns import *
+from viz_circuits import *
 
 """# Load datasets"""
 
@@ -177,7 +179,7 @@ head_to_head_adjList = {}
 for head_type in ["q", "k", "v"]:
     for head in heads_not_ablate:
         result = qkv_to_HH[head_type][head]
-        filtered_indices = (result < 0.8) & (result != 0.0)
+        filtered_indices = (result < threshold) & (result != 0.0)
         rows, cols = filtered_indices.nonzero(as_tuple=True)
         sender_nodes = list(zip(rows.tolist(), cols.tolist()))
         head_with_type = head + (head_type,)
@@ -187,7 +189,6 @@ for head_type in ["q", "k", "v"]:
 
 mlp_to_mlp_results = {}
 
-# for layer in range(11, 0, -1):
 for layer in reversed(mlps_not_ablate):
     print(layer)
     model.reset_hooks()
@@ -205,7 +206,7 @@ for layer in reversed(mlps_not_ablate):
 mlp_to_mlp_adjList = {}
 for mlp in mlps_not_ablate:
     result = mlp_to_mlp_results[mlp]
-    filtered_indices = (result < 0.80) & (result != 0.0)
+    filtered_indices = (result < threshold) & (result != 0.0)
     filtered_indices = filtered_indices.nonzero(as_tuple=True)[0]
     mlp_to_mlp_adjList[mlp] = filtered_indices.tolist()
 
@@ -213,7 +214,6 @@ for mlp in mlps_not_ablate:
 
 head_to_mlp_results = {}
 
-# for layer in range(11, 0, -1):
 for layer in reversed(mlps_not_ablate):
     print(layer)
     model.reset_hooks()
@@ -231,7 +231,7 @@ for layer in reversed(mlps_not_ablate):
 head_to_mlp_adjList = {}
 for layer in mlps_not_ablate:
     result = head_to_mlp_results[layer]
-    filtered_indices = (result < 0.8) & (result != 0.0)
+    filtered_indices = (result < threshold) & (result != 0.0)
     rows, cols = filtered_indices.nonzero(as_tuple=True)
     sender_nodes = list(zip(rows.tolist(), cols.tolist()))
     head_to_mlp_adjList[layer] = sender_nodes
@@ -263,7 +263,7 @@ mlp_to_head_adjList = {}
 for head_type in ["q", "k", "v"]:
     for head in heads_not_ablate:
         result = qkv_mlp_to_HH[head_type][head]
-        filtered_indices = (result < 0.8) & (result != 0.0)
+        filtered_indices = (result < threshold) & (result != 0.0)
         filtered_indices = filtered_indices.nonzero(as_tuple=True)[0]
         head_with_type = head + (head_type,)
         mlp_to_head_adjList[head_with_type] = filtered_indices.tolist()
@@ -305,7 +305,7 @@ path_patch_head_to_final_resid_post = get_path_patch_head_to_final_resid_post(he
 
 heads_to_resid = {}
 result = path_patch_head_to_final_resid_post
-filtered_indices = (result < 0.8) & (result != 0.0)
+filtered_indices = (result < threshold) & (result != 0.0)
 rows, cols = filtered_indices.nonzero(as_tuple=True)
 heads_to_resid['resid'] = list(zip(rows.tolist(), cols.tolist()))
 
@@ -319,7 +319,7 @@ path_patch_mlp_to_final_resid_post = get_path_patch_mlp_to_final_resid_post(mlps
 
 mlps_to_resid = {}
 result = path_patch_mlp_to_final_resid_post
-filtered_indices = (result < 0.8) & (result != 0.0)
+filtered_indices = (result < threshold) & (result != 0.0)
 filtered_indices = filtered_indices.nonzero(as_tuple=True)[0]
 mlps_to_resid['resid'] = filtered_indices.tolist()
 

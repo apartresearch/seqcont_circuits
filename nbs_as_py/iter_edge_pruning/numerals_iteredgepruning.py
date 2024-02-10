@@ -22,6 +22,7 @@ model_name = "gpt2-small"
 heads_not_ablate = [(0, 1), (1, 5), (4, 4), (4, 10), (5, 0), (6, 1), (6, 6), (6, 10), (7, 11), (8, 1), (8, 6), (8, 8), (8, 9), (9, 1)]
 mlps_not_ablate = [0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11]
 
+threshold = 0.8
 save_files = True
 load_graph_files = False
 run_on_other_tasks = True
@@ -80,6 +81,7 @@ from loop_node_ablation_fns import *
 # %cd /content/seqcont_circuits/src/iter_edge_pruning
 
 from edge_pruning_fns import *
+from viz_circuits import *
 
 """# Load datasets"""
 
@@ -175,7 +177,7 @@ head_to_head_adjList = {}
 for head_type in ["q", "k", "v"]:
     for head in heads_not_ablate:
         result = qkv_to_HH[head_type][head]
-        filtered_indices = (result < 0.8) & (result != 0.0)
+        filtered_indices = (result < threshold) & (result != 0.0)
         rows, cols = filtered_indices.nonzero(as_tuple=True)
         sender_nodes = list(zip(rows.tolist(), cols.tolist()))
         head_with_type = head + (head_type,)
@@ -185,7 +187,6 @@ for head_type in ["q", "k", "v"]:
 
 mlp_to_mlp_results = {}
 
-# for layer in range(11, 0, -1):
 for layer in reversed(mlps_not_ablate):
     print(layer)
     model.reset_hooks()
@@ -203,7 +204,7 @@ for layer in reversed(mlps_not_ablate):
 mlp_to_mlp_adjList = {}
 for mlp in mlps_not_ablate:
     result = mlp_to_mlp_results[mlp]
-    filtered_indices = (result < 0.80) & (result != 0.0)
+    filtered_indices = (result < threshold) & (result != 0.0)
     filtered_indices = filtered_indices.nonzero(as_tuple=True)[0]
     mlp_to_mlp_adjList[mlp] = filtered_indices.tolist()
 
@@ -211,7 +212,6 @@ for mlp in mlps_not_ablate:
 
 head_to_mlp_results = {}
 
-# for layer in range(11, 0, -1):
 for layer in reversed(mlps_not_ablate):
     print(layer)
     model.reset_hooks()
@@ -229,7 +229,7 @@ for layer in reversed(mlps_not_ablate):
 head_to_mlp_adjList = {}
 for layer in mlps_not_ablate:
     result = head_to_mlp_results[layer]
-    filtered_indices = (result < 0.8) & (result != 0.0)
+    filtered_indices = (result < threshold) & (result != 0.0)
     rows, cols = filtered_indices.nonzero(as_tuple=True)
     sender_nodes = list(zip(rows.tolist(), cols.tolist()))
     head_to_mlp_adjList[layer] = sender_nodes
@@ -261,7 +261,7 @@ mlp_to_head_adjList = {}
 for head_type in ["q", "k", "v"]:
     for head in heads_not_ablate:
         result = qkv_mlp_to_HH[head_type][head]
-        filtered_indices = (result < 0.8) & (result != 0.0)
+        filtered_indices = (result < threshold) & (result != 0.0)
         filtered_indices = filtered_indices.nonzero(as_tuple=True)[0]
         head_with_type = head + (head_type,)
         mlp_to_head_adjList[head_with_type] = filtered_indices.tolist()
@@ -303,7 +303,7 @@ path_patch_head_to_final_resid_post = get_path_patch_head_to_final_resid_post(he
 
 heads_to_resid = {}
 result = path_patch_head_to_final_resid_post
-filtered_indices = (result < 0.8) & (result != 0.0)
+filtered_indices = (result < threshold) & (result != 0.0)
 rows, cols = filtered_indices.nonzero(as_tuple=True)
 heads_to_resid['resid'] = list(zip(rows.tolist(), cols.tolist()))
 
@@ -317,7 +317,7 @@ path_patch_mlp_to_final_resid_post = get_path_patch_mlp_to_final_resid_post(mlps
 
 mlps_to_resid = {}
 result = path_patch_mlp_to_final_resid_post
-filtered_indices = (result < 0.8) & (result != 0.0)
+filtered_indices = (result < threshold) & (result != 0.0)
 filtered_indices = filtered_indices.nonzero(as_tuple=True)[0]
 mlps_to_resid['resid'] = filtered_indices.tolist()
 
@@ -390,122 +390,10 @@ if load_graph_files:
 
 """## plot qkv"""
 
-def plot_graph_adjacency_qkv(head_to_head_adjList, mlp_to_mlp_adjList, head_to_mlp_adjList,
-                             mlp_to_head_adjList, heads_to_resid, mlps_to_resid,
-                             filename="circuit_graph", highlighted_nodes=None):
-    dot = Digraph()
-    dot.attr(ranksep='0.45', nodesep='0.11')  # vert height- ranksep, nodesep- w
-
-    dot.node('resid_post', color="#ffcccb", style='filled')
-
-    for node in mlp_to_mlp_adjList.keys():
-        sender_name = "MLP " + str(node)
-        dot.node(sender_name, color="#ffcccb", style='filled')
-
-    for node in head_to_head_adjList.keys():
-        sender_name = f"{node[0]} , {node[1]} {node[2]}"
-        dot.node(sender_name, color="#ffcccb", style='filled')
-        sender_name = f"{node[0]} , {node[1]}"
-        dot.node(sender_name, color="#ffcccb", style='filled')
-
-    edges_added = []
-    # for every q k v node, plot an edge to output node
-    for node in head_to_head_adjList.keys():
-        sender_name = f"{node[0]} , {node[1]} {node[2]}"
-        receiver_name = f"{node[0]} , {node[1]}"
-        dot.edge(sender_name, receiver_name, color = 'red')
-        edges_added.append((sender_name, receiver_name))
-
-    for node in mlp_to_head_adjList.keys():
-        sender_name = f"{node[0]} , {node[1]} {node[2]}"
-        dot.node(sender_name, color="#ffcccb", style='filled')
-        sender_name = f"{node[0]} , {node[1]}"
-        dot.node(sender_name, color="#ffcccb", style='filled')
-
-    # for every q k v node, plot an edge to output node
-    for node in mlp_to_head_adjList.keys():
-        sender_name = f"{node[0]} , {node[1]} {node[2]}"
-        receiver_name = f"{node[0]} , {node[1]}"
-        if (sender_name, receiver_name) not in edges_added:
-            dot.edge(sender_name, receiver_name, color = 'red')
-
-    def loop_adjList(adjList):
-        for end_node, start_nodes_list in adjList.items():
-            if isinstance(end_node, int):
-                receiver_name = "MLP " + str(end_node)
-            elif isinstance(end_node, tuple):
-                if len(end_node) == 3:
-                    receiver_name = f"{end_node[0]} , {end_node[1]} {end_node[2]}"
-                elif len(end_node) == 2:
-                    receiver_name = f"{end_node[0]} , {end_node[1]}"
-            else:
-                receiver_name = 'resid_post'
-            for start in start_nodes_list:
-                if isinstance(start, int):
-                    sender_name = "MLP " + str(start)
-                elif isinstance(start, tuple):
-                    if len(start) == 3:
-                        sender_name = f"{start[0]} , {start[1]} {start[2]}"
-                    elif len(start) == 2:
-                        sender_name = f"{start[0]} , {start[1]}"
-                dot.node(sender_name, color="#ffcccb", style='filled')
-                dot.node(receiver_name, color="#ffcccb", style='filled')
-                dot.edge(sender_name, receiver_name, color = 'red')
-
-    loop_adjList(head_to_head_adjList)
-    loop_adjList(mlp_to_mlp_adjList)
-    loop_adjList(head_to_mlp_adjList)
-    loop_adjList(mlp_to_head_adjList)
-    loop_adjList(heads_to_resid)
-    loop_adjList(mlps_to_resid)
-
-    # Display the graph in Colab
-    # display(Source(dot.source))
-
-    # Save the graph to a file
-    dot.format = 'png'  # You can change this to 'pdf', 'png', etc. based on your needs
-    dot.render(filename)
-    files.download(filename + ".png")
-
 plot_graph_adjacency_qkv(head_to_head_adjList, mlp_to_mlp_adjList, head_to_mlp_adjList,
                          mlp_to_head_adjList, heads_to_resid, mlps_to_resid, filename="qkv")
 
 """## plot no qkv fn"""
-
-def plot_graph_adjacency(head_to_head_adjList, mlp_to_mlp_adjList, head_to_mlp_adjList,
-                             mlp_to_head_adjList, heads_to_resid, mlps_to_resid,
-                             filename="circuit_graph", highlighted_nodes=None):
-    dot = Digraph()
-    dot.attr(ranksep='0.45', nodesep='0.11')  # vert height- ranksep, nodesep- w
-
-    def loop_adjList(adjList):
-        for end_node, start_nodes_list in adjList.items():
-            if isinstance(end_node, int):
-                receiver_name = "MLP " + str(end_node)
-            elif isinstance(end_node, tuple):
-                receiver_name = f"{end_node[0]} , {end_node[1]}"
-            else:
-                receiver_name = 'resid_post'
-            for start in start_nodes_list:
-                if isinstance(start, int):
-                    sender_name = "MLP " + str(start)
-                elif isinstance(start, tuple):
-                    sender_name = f"{start[0]} , {start[1]}"
-                dot.node(sender_name, color="#ffcccb", style='filled')
-                dot.node(receiver_name, color="#ffcccb", style='filled')
-                dot.edge(sender_name, receiver_name, color = 'red')
-
-    loop_adjList(head_to_head_adjList)
-    loop_adjList(mlp_to_mlp_adjList)
-    loop_adjList(head_to_mlp_adjList)
-    loop_adjList(mlp_to_head_adjList)
-    loop_adjList(heads_to_resid)
-    loop_adjList(mlps_to_resid)
-
-    # Save the graph to a file
-    dot.format = 'png'  # You can change this to 'pdf', 'png', etc. based on your needs
-    dot.render(filename)
-    files.download(filename + ".png")
 
 plot_graph_adjacency(head_to_head_adjList, mlp_to_mlp_adjList, head_to_mlp_adjList,
                          mlp_to_head_adjList, heads_to_resid, mlps_to_resid, filename="no qkv")

@@ -2,7 +2,7 @@
 Runs
 
 Usage:
-python run_gen_data.py --model "gpt2" 
+python run_gen_data.py --model "gpt2-small" 
 --task "numerals" --num_samps 10
 """
 import os
@@ -22,7 +22,7 @@ from generate_data import *
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="gpt2")  # 'gpt2' is small
+    parser.add_argument("--model", type=str, default="gpt2-small")
     # parser.add_argument("--task", choices=["numerals", "numwords", "months"], type=str, default="numerals")
     # parser.add_argument("--num_samps", type=int, default=512)
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     ### Load Model ###
     model = HookedTransformer.from_pretrained(
-        "gpt2-small",
+        model_name,
         center_unembed=True,
         center_writing_weights=True,
         fold_ln=True,

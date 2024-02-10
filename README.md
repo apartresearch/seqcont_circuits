@@ -38,7 +38,11 @@ python run_node_ablation.py --model "gpt2-small" --task "numerals" --num_samps 5
 Similarly, the other files can be run by naviating to their respective sub-folder in `src`. These other commands include:
 
 ```bash
-python run_gen_data.py --model "gpt2" 
+python run_gen_data.py --model "gpt2-small" 
+
+python run_edge_ablation.py --model "gpt2-small" --task "numerals" --num_samps 512 --threshold 0.8
+
+python run_attn_pats.py --model "gpt2-small" --task "numerals" --num_samps 128 
 
 # If an issue such as `RuntimeError: "LayerNormKernelImpl" not implemented for 'Half'`, it could be due to the GPU not being powerful enough.
 python run_logit_lens.py --model "gpt2" --task "numerals" --num_samps 512
