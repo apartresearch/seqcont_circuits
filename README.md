@@ -25,9 +25,9 @@ Install Dependencies:
 
 Explore the Notebooks:
 
-Navigate to the ``notebooks`` directory and open the Jupyter notebooks to see detailed analyses and visualizations.
+Navigate to the ``notebooks`` directory and open the Colab notebooks to see detailed analyses and visualizations.
 
-#### Running Experiments
+### Running Experiments
 
 After navigating to the `src/node_ablation` folder, use this command to run node ablation experiments. Lower `--num_samps` if one encounters GPU out-of-memory issues. An A100 is recommended.
 
@@ -39,6 +39,12 @@ After navigating to the `src/logit_lens` folder, use this command to run logit_l
 
 ```bash
 python run_logit_lens.py --model "gpt2" --task "numerals" --num_samps 512
+```
+
+Other commands include:
+
+```bash
+python run_gen_data.py --model "gpt2" 
 ```
 
 #### Citation
