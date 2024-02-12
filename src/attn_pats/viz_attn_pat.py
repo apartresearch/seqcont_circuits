@@ -29,7 +29,7 @@ def viz_attn_pat(
     patterns = local_cache["attn", layer][:, head_index].mean(dim=0)
     patterns_np = patterns.cpu().numpy() 
 
-    local_tokens = tokens[0]
+    local_tokens = tokens[-1] # last sample uses names
     str_tokens = model.to_str_tokens(local_tokens)
     str_tokens[0] = '<PAD>' # Rename the first token string as '<END>'
 
