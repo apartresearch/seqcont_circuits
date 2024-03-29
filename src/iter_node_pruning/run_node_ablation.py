@@ -111,7 +111,7 @@ if __name__ == "__main__":
         'mlps': curr_circ_mlps,
     }
 
-    circ_file_name = f'new_results/{task}_circuit_thres_{threshold}.json'
+    circ_file_name = f'../../new_results/{task}_circuit_thres_{threshold}.json'
     directory = os.path.dirname(circ_file_name)
     if not os.path.exists(directory):
         os.makedirs('new_results', exist_ok=True)

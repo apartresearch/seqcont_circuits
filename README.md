@@ -23,7 +23,7 @@ Install Dependencies:
 
 `` pip install -r requirements.txt ``
 
-Explore the Notebooks:
+**Explore the Notebooks:**
 
 Navigate to the ``notebooks`` directory and open the Colab notebooks to see detailed analyses and visualizations.
 

@@ -57,7 +57,7 @@ if __name__ == "__main__":
     ### Load Circuit ###
     #Load the saved heads_not_ablate and mlps_not_ablate json instead of passing as args (too large)
 
-    circ_file_name = f'new_results/{task}_circuit_thres_{threshold}.json'
+    circ_file_name = f'../../results/{task}_circuit_thres_{threshold}.json'
     with open(circ_file_name, 'r') as json_file:
         circuit_dict = json.load(json_file)
     heads_not_ablate, mlps_not_ablate = circuit_dict['heads'], circuit_dict['mlps']
