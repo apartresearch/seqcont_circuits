@@ -1,5 +1,4 @@
 # Understanding Sequence Continuation in Transformers through Circuit Analysis 
-##### by Michael Lan and Fazl Barez
 
 ## Overview
 
@@ -48,16 +47,3 @@ python run_attn_pats.py --model "gpt2-small" --task "numerals" --num_samps 128
 python run_logit_lens.py --model "gpt2" --task "numerals" --num_samps 512
 ```
 
-#### Citation
-If you find our work useful, please consider citing our paper:
-
-```
-@misc{lan2024interpreting,
-      title={Interpreting Shared Circuits for Ordered Sequence Prediction in a Large Language Model}, 
-      author={Michael Lan and Fazl Barez},
-      year={2024},
-      eprint={2311.04131},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL}
-}
-```
