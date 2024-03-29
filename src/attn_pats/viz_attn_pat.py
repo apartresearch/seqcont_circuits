@@ -2,6 +2,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
+import pdb
 
 def get_ind(token_list, token1, token2, printInd=False):
     # Find the indices of the tokens in the tokenized sentence
@@ -29,7 +30,8 @@ def viz_attn_pat(
     patterns = local_cache["attn", layer][:, head_index].mean(dim=0)
     patterns_np = patterns.cpu().numpy() 
 
-    local_tokens = tokens[-1] # last sample uses names
+    # local_tokens = tokens[-1] # last sample uses names
+    local_tokens = tokens[0] # first sample has 1 2 3 4
     str_tokens = model.to_str_tokens(local_tokens)
     str_tokens[0] = '<PAD>' # Rename the first token string as '<END>'
 

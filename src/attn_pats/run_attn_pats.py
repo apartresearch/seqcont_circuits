@@ -2,7 +2,7 @@
 Runs visualize attention patterns and saves to json
 
 Usage:
-python run_attn_pats.py --model "gpt2-small" --task "numerals" --num_samps 300 
+python run_attn_pats.py --model "gpt2-small" --task "numerals" --num_samps 128  
 """
 import os
 import pickle

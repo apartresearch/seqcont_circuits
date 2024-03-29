@@ -14,8 +14,6 @@ import torch as t
 from torch import Tensor
 from jaxtyping import Float
 
-from transformer_lens.hook_points import (
-)  # Hooking utilities
 from transformer_lens import HookedTransformer
 
 from edge_pruning_fns import *
@@ -36,7 +34,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, default="gpt2-small")
     parser.add_argument("--task", choices=["numerals", "numwords", "months"], type=str, default="numerals")
     parser.add_argument("--num_samps", type=int, default=512)
-    parser.add_argument("--threshold", type=int, default=0.8)
+    parser.add_argument("--threshold", type=float, default=0.8)
 
     args = parser.parse_args()
     model_name = args.model
