@@ -121,6 +121,7 @@ def ablate_head_from_full(
         orig_score: float,
         print_output: bool = True,
 ) -> float:
+    # CIRCUIT contains the components to not ablate
     CIRCUIT = {}
     SEQ_POS_TO_KEEP = {}
     for i in range(len(model.tokenizer.tokenize(dataset_2.prompts[0]['text']))):
@@ -133,9 +134,9 @@ def ablate_head_from_full(
     model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
 
     model = add_ablation_hook_head(model, means_dataset=dataset_2, circuit=CIRCUIT, seq_pos_to_keep=SEQ_POS_TO_KEEP)
-    ioi_logits_minimal = model(dataset.toks)
+    logits_minimal = model(dataset.toks)
 
-    new_score = get_logit_diff(ioi_logits_minimal, dataset)
+    new_score = get_logit_diff(logits_minimal, dataset)
     if print_output:
         print(f"Average logit difference (circuit / full) %: {100 * new_score / orig_score:.4f}")
     return 100 * new_score / orig_score
