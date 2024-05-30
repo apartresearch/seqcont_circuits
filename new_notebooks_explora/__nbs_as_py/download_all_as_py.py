@@ -4,7 +4,7 @@
 # In[ ]:
 
 
-get_ipython().run_cell_magic('capture', '', "# Step 1: Mount Google Drive\nfrom google.colab import drive\ndrive.mount('/content/drive')\n\n# Step 2: Install nbconvert if not already installed\n!pip install nbconvert\n")
+get_ipython().run_cell_magic('capture', '', "import os\n\n# Step 1: Mount Google Drive\nfrom google.colab import drive\ndrive.mount('/content/drive')\n\n# Step 2: Install nbconvert if not already installed\n!pip install nbconvert\n")
 
 
 # In[ ]:
@@ -48,4 +48,10 @@ for dirpath, _, filenames in os.walk(source_folder_path):
                 f.write(script)
 
 print("Conversion completed. Scripts saved in:", target_folder_path)
+
+
+# In[ ]:
+
+
+
 
