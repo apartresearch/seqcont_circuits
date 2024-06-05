@@ -132,15 +132,15 @@ del hf_model
 model = model.to("cuda" if torch.cuda.is_available() else "cpu")
 
 
+# In[11]:
+
+
+words = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+
+
 # # Test prompts
 
-# In[ ]:
-
-
-words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce']
-
-
-# In[11]:
+# In[12]:
 
 
 # Get list of arguments to pass to `generate` (specifically these are the ones relating to sampling)
@@ -150,7 +150,7 @@ generate_kwargs = dict(
     temperature = 1.0, # suppresses annoying output errors
 )
 
-prompt =  "siete ocho nueve"
+prompt =  "enero febrero marzo"
 output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
 print(output)
 
@@ -158,59 +158,117 @@ print(output)
 # In[13]:
 
 
-prompt =  "siete ocho nueve "
+prompt =  "septiembre octubre noviembrev "
 output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
 print(output)
 
 
 # Because llama-2 tokenizer treats space as a token, remember to ablate even the spaces too, not just the numbers!
 
-# In[12]:
+# In[15]:
 
 
-tokenizer.tokenize('siete ocho nueve diez')
-
-
-# In[14]:
-
-
-prompt =  "dos tres cuatro cinco"
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
+prompt =  "abril mayo junio"
+output = model.generate(prompt, max_new_tokens=3, **generate_kwargs)
 print(output)
 
 
 # In[18]:
 
 
-tokenizer.tokenize("dos tres cuatro cinco")
+prompt =  "marzo abril mayo"
+output = model.generate(prompt, max_new_tokens=4, **generate_kwargs)
+print(output)
 
 
-# In[17]:
+# In[19]:
 
 
-prompt =  "uno dos tres"
+prompt =  "enero febrero marzo abril mayo"
+output = model.generate(prompt, max_new_tokens=4, **generate_kwargs)
+print(output)
+
+
+# In[20]:
+
+
+prompt =  "febrero marzo abril mayo"
+output = model.generate(prompt, max_new_tokens=4, **generate_kwargs)
+print(output)
+
+
+# In[21]:
+
+
+prompt =  "febrero marzo abril mayo junio"
+output = model.generate(prompt, max_new_tokens=4, **generate_kwargs)
+print(output)
+
+
+# In[25]:
+
+
+prompt =  "julio agosto septiembre octubre"
+output = model.generate(prompt, max_new_tokens=3, **generate_kwargs)
+print(output)
+
+
+# In[26]:
+
+
+prompt =  "junio julio agosto septiembre octubre"
+output = model.generate(prompt, max_new_tokens=3, **generate_kwargs)
+print(output)
+
+
+# In[28]:
+
+
+prompt =  "marzo abril mayo junio julio"
+output = model.generate(prompt, max_new_tokens=2, **generate_kwargs)
+print(output)
+
+
+# In[30]:
+
+
+prompt =  "febrero marzo abril"
 output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
 print(output)
 
 
-# In[15]:
+# In[32]:
 
 
-prompt =  "dos tres quatro cinco seis"
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
+prompt =  "marzo abril mayo"
+output = model.generate(prompt, max_new_tokens=2, **generate_kwargs)
 print(output)
+
+
+# In[22]:
+
+
+prompt =  "'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve',"
+output = model.generate(prompt, max_new_tokens=4, **generate_kwargs)
+print(output)
+
+
+# In[ ]:
+
+
+tokenizer.tokenize('siete ocho nueve diez')
 
 
 # # Import functions from repo
 
-# In[34]:
+# In[33]:
 
 
 get_ipython().system('git clone https://github.com/apartresearch/seqcont_circuits.git')
 get_ipython().run_line_magic('cd', '/content/seqcont_circuits/src/iter_node_pruning')
 
 
-# In[35]:
+# In[34]:
 
 
 # from dataset import Dataset
@@ -223,7 +281,7 @@ from loop_node_ablation_fns import *
 
 # # Generate dataset with multiple prompts
 
-# In[19]:
+# In[35]:
 
 
 class Dataset:
@@ -288,10 +346,10 @@ class Dataset:
         return self.N
 
 
-# In[27]:
+# In[36]:
 
 
-words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce']
+words = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
 def generate_prompts_list(x ,y):
     prompts_list = []
@@ -311,16 +369,16 @@ def generate_prompts_list(x ,y):
     return prompts_list
 
 # prompts_list = generate_prompts_list(0, 8)
-prompts_list = generate_prompts_list(0, 4)
+prompts_list = generate_prompts_list(0, 2)
 prompts_list
 
 
-# In[29]:
+# In[37]:
 
 
 import random
-# words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce']
-words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis']
+# words = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+words = ['enero', 'febrero', 'marzo', 'abril']
 
 def generate_prompts_list_corr(prompt_list):
     outlist = []
@@ -355,7 +413,7 @@ prompts_list_2 = generate_prompts_list_corr(prompts_list)
 prompts_list_2
 
 
-# In[30]:
+# In[38]:
 
 
 dataset = Dataset(prompts_list, model.tokenizer)
@@ -364,7 +422,7 @@ dataset_2 = Dataset(prompts_list_2, model.tokenizer)
 
 # # Get orig score
 
-# In[36]:
+# In[39]:
 
 
 model.reset_hooks(including_permanent=True)
@@ -372,7 +430,7 @@ logits_original = model(dataset.toks)
 orig_score = get_logit_diff(logits_original, dataset)
 
 
-# In[37]:
+# In[40]:
 
 
 next_token = logits_original[0, -1].argmax(dim=-1)  # logits have shape [1, sequence_length, vocab_size]
@@ -380,13 +438,13 @@ next_char = model.to_string(next_token)
 print(repr(next_char))
 
 
-# In[38]:
+# In[41]:
 
 
 orig_score
 
 
-# In[39]:
+# In[42]:
 
 
 import gc
@@ -607,7 +665,7 @@ for i in range(32):
 
 # ## new fns
 
-# In[40]:
+# In[43]:
 
 
 # from dataset import Dataset
@@ -727,7 +785,7 @@ def find_circuit_backw(model, dataset, dataset_2, heads_not_ablate=None, mlps_no
 
 # ## run
 
-# In[41]:
+# In[44]:
 
 
 # threshold = 20
@@ -756,7 +814,7 @@ def find_circuit_backw(model, dataset, dataset_2, heads_not_ablate=None, mlps_no
 #     iter += 1
 
 
-# In[42]:
+# In[ ]:
 
 
 threshold = 20
@@ -773,21 +831,21 @@ old_circ_mlps = curr_circ_mlps.copy()
 curr_circ_heads, curr_circ_mlps, new_score, comp_scores = find_circuit_backw(model, dataset, dataset_2, curr_circ_heads, curr_circ_mlps, orig_score, threshold)
 
 
-# In[49]:
+# In[ ]:
 
 
-with open('spanishNW_b_20_scores.pkl', 'wb') as file:
+with open('spanish_months_b_20_scores.pkl', 'wb') as file:
     pickle.dump(all_comp_scores, file)
-files.download('spanishNW_b_20_scores.pkl')
+files.download('spanish_months_b_20_scores.pkl')
 
 
-# In[44]:
+# In[ ]:
 
 
 curr_circ_heads
 
 
-# In[45]:
+# In[ ]:
 
 
 curr_circ_mlps
@@ -795,7 +853,7 @@ curr_circ_mlps
 
 # ## Find most impt heads from circ
 
-# In[46]:
+# In[ ]:
 
 
 model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
@@ -807,7 +865,7 @@ circ_score = (100 * new_score / orig_score).item()
 print(f"(cand circuit / full) %: {circ_score:.4f}")
 
 
-# In[47]:
+# In[ ]:
 
 
 lh_scores = {}
@@ -825,7 +883,7 @@ for lh in curr_circ_heads:
     lh_scores[lh] = new_perc
 
 
-# In[48]:
+# In[ ]:
 
 
 sorted_lh_scores = dict(sorted(lh_scores.items(), key=lambda item: item[1]))

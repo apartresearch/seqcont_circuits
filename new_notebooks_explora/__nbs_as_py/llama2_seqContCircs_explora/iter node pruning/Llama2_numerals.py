@@ -7,7 +7,7 @@
 
 # # Change Inputs Here
 
-# In[1]:
+# In[ ]:
 
 
 task = "numerals"  # choose: numerals, numwords, months
@@ -22,13 +22,13 @@ run_on_other_tasks = True
 
 # # Setup
 
-# In[2]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('capture', '', '%pip install git+https://github.com/neelnanda-io/TransformerLens.git\n')
 
 
-# In[3]:
+# In[ ]:
 
 
 import torch
@@ -62,7 +62,7 @@ import matplotlib.pyplot as plt
 import statistics
 
 
-# In[4]:
+# In[ ]:
 
 
 import transformer_lens
@@ -76,7 +76,7 @@ from transformer_lens import HookedTransformer, HookedTransformerConfig, Factore
 
 # We turn automatic differentiation off, to save GPU memory, as this notebook focuses on model inference not model training.
 
-# In[5]:
+# In[ ]:
 
 
 torch.set_grad_enabled(False)
@@ -84,19 +84,19 @@ torch.set_grad_enabled(False)
 
 # # Load Model
 
-# In[6]:
+# In[ ]:
 
 
 from transformers import LlamaForCausalLM, LlamaTokenizer
 
 
-# In[7]:
+# In[ ]:
 
 
 get_ipython().system('huggingface-cli login')
 
 
-# In[8]:
+# In[ ]:
 
 
 LLAMA_2_7B_CHAT_PATH = "meta-llama/Llama-2-7b-chat-hf"
@@ -106,7 +106,7 @@ tokenizer = LlamaTokenizer.from_pretrained(LLAMA_2_7B_CHAT_PATH)
 hf_model = LlamaForCausalLM.from_pretrained(LLAMA_2_7B_CHAT_PATH, low_cpu_mem_usage=True)
 
 
-# In[9]:
+# In[ ]:
 
 
 import transformer_lens.utils as utils
@@ -114,7 +114,7 @@ from transformer_lens.hook_points import HookPoint
 from transformer_lens import HookedTransformer
 
 
-# In[10]:
+# In[ ]:
 
 
 model = HookedTransformer.from_pretrained(
@@ -134,14 +134,14 @@ model = model.to("cuda" if torch.cuda.is_available() else "cpu")
 
 # # Import functions from repo
 
-# In[11]:
+# In[ ]:
 
 
 get_ipython().system('git clone https://github.com/apartresearch/seqcont_circuits.git')
 get_ipython().run_line_magic('cd', '/content/seqcont_circuits/src/iter_node_pruning')
 
 
-# In[12]:
+# In[ ]:
 
 
 # from dataset import Dataset
@@ -154,7 +154,7 @@ from loop_node_ablation_fns import *
 
 # # test utils prompts
 
-# In[15]:
+# In[ ]:
 
 
 example_prompt = "1 2"
@@ -162,7 +162,7 @@ example_answer = " 4"
 utils.test_prompt(example_prompt, example_answer, model, prepend_bos=True)
 
 
-# In[14]:
+# In[ ]:
 
 
 example_prompt = "1 2 3"
@@ -170,7 +170,7 @@ example_answer = " 4"
 utils.test_prompt(example_prompt, example_answer, model, prepend_bos=True)
 
 
-# In[16]:
+# In[ ]:
 
 
 example_prompt = "5 6 7"
@@ -178,7 +178,7 @@ example_answer = " 8"
 utils.test_prompt(example_prompt, example_answer, model, prepend_bos=True)
 
 
-# In[17]:
+# In[ ]:
 
 
 example_prompt = "3 5 7"
@@ -186,7 +186,7 @@ example_answer = " 9"
 utils.test_prompt(example_prompt, example_answer, model, prepend_bos=True)
 
 
-# In[18]:
+# In[ ]:
 
 
 example_prompt = "2 4 6"
@@ -194,7 +194,7 @@ example_answer = " 8"
 utils.test_prompt(example_prompt, example_answer, model, prepend_bos=True)
 
 
-# In[19]:
+# In[ ]:
 
 
 example_prompt = "200 300 400"
@@ -238,9 +238,7 @@ class Dataset:
         ]
 
         pos_dict = {}
-        # for i in range(1, 4):
-        #     pos_dict['S'+str(i)] = i
-        list_tokens = tokenizer.tokenize('2 4 6 ')
+        list_tokens = tokenizer.tokenize(prompt["text"])
         for i, tok_as_str in enumerate(list_tokens):
             pos_dict['S'+str(i)] = i
 
@@ -269,7 +267,7 @@ class Dataset:
         return self.N
 
 
-# In[21]:
+# In[ ]:
 
 
 def generate_prompts_list(x ,y):

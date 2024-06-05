@@ -809,7 +809,7 @@ def find_circuit_backw(model, dataset, dataset_2, heads_not_ablate=None, mlps_no
 #     iter += 1
 
 
-# In[ ]:
+# In[29]:
 
 
 threshold = 20
@@ -826,7 +826,7 @@ old_circ_mlps = curr_circ_mlps.copy()
 curr_circ_heads, curr_circ_mlps, new_score, comp_scores = find_circuit_backw(model, dataset, dataset_2, curr_circ_heads, curr_circ_mlps, orig_score, threshold)
 
 
-# In[ ]:
+# In[36]:
 
 
 with open('months_b_20_scores.pkl', 'wb') as file:
@@ -834,13 +834,13 @@ with open('months_b_20_scores.pkl', 'wb') as file:
 files.download('months_b_20_scores.pkl')
 
 
-# In[ ]:
+# In[31]:
 
 
 curr_circ_heads
 
 
-# In[ ]:
+# In[32]:
 
 
 curr_circ_mlps
@@ -848,7 +848,7 @@ curr_circ_mlps
 
 # ## Find most impt heads from circ
 
-# In[ ]:
+# In[33]:
 
 
 model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
@@ -860,7 +860,7 @@ circ_score = (100 * new_score / orig_score).item()
 print(f"(cand circuit / full) %: {circ_score:.4f}")
 
 
-# In[ ]:
+# In[34]:
 
 
 lh_scores = {}
@@ -878,7 +878,7 @@ for lh in curr_circ_heads:
     lh_scores[lh] = new_perc
 
 
-# In[ ]:
+# In[35]:
 
 
 sorted_lh_scores = dict(sorted(lh_scores.items(), key=lambda item: item[1]))

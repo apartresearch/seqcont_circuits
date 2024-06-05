@@ -5,30 +5,15 @@
 
 # This will save files to your local machine if `save_files` is set to True.
 
-# # Change Inputs Here
-
-# In[1]:
-
-
-task = "numerals"  # choose: numerals, numwords, months
-prompt_types = ['done', 'lost', 'names']
-num_samps_per_ptype = 4 #768 512
-
-# model_name = "gpt2-small"
-
-save_files = True
-run_on_other_tasks = True
-
-
 # # Setup
 
-# In[2]:
+# In[1]:
 
 
 get_ipython().run_cell_magic('capture', '', '%pip install git+https://github.com/neelnanda-io/TransformerLens.git\n')
 
 
-# In[3]:
+# In[2]:
 
 
 import torch
@@ -62,7 +47,7 @@ import matplotlib.pyplot as plt
 import statistics
 
 
-# In[4]:
+# In[3]:
 
 
 import transformer_lens
@@ -76,10 +61,16 @@ from transformer_lens import HookedTransformer, HookedTransformerConfig, Factore
 
 # We turn automatic differentiation off, to save GPU memory, as this notebook focuses on model inference not model training.
 
-# In[5]:
+# In[4]:
 
 
 torch.set_grad_enabled(False)
+
+
+# In[5]:
+
+
+save_files = True
 
 
 # # Load Model
@@ -137,10 +128,19 @@ model = model.to("cuda" if torch.cuda.is_available() else "cpu")
 # In[ ]:
 
 
-words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce']
+# Get list of arguments to pass to `generate` (specifically these are the ones relating to sampling)
+generate_kwargs = dict(
+    do_sample = False, # deterministic output so we can compare it to the HF model
+    top_p = 1.0, # suppresses annoying output errors
+    temperature = 1.0, # suppresses annoying output errors
+)
+
+prompt =  "1 1 2 3 5 "
+output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
+print(output)
 
 
-# In[11]:
+# In[ ]:
 
 
 # Get list of arguments to pass to `generate` (specifically these are the ones relating to sampling)
@@ -150,80 +150,108 @@ generate_kwargs = dict(
     temperature = 1.0, # suppresses annoying output errors
 )
 
-prompt =  "siete ocho nueve"
+prompt =  "1 1 2 3 5"
 output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
 print(output)
 
 
-# In[13]:
+# Next char it generates is ' ', not '8', so put a space at end of your prompts
+
+# In[ ]:
 
 
-prompt =  "siete ocho nueve "
+prompt =  "1 1 2 3 "
 output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
 print(output)
 
 
-# Because llama-2 tokenizer treats space as a token, remember to ablate even the spaces too, not just the numbers!
-
-# In[12]:
+# In[ ]:
 
 
-tokenizer.tokenize('siete ocho nueve diez')
-
-
-# In[14]:
-
-
-prompt =  "dos tres cuatro cinco"
+prompt =  "0 1 1 2 3 "
 output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
 print(output)
 
 
-# In[18]:
+# In[ ]:
 
 
-tokenizer.tokenize("dos tres cuatro cinco")
-
-
-# In[17]:
-
-
-prompt =  "uno dos tres"
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
+prompt =  "3 4 7 11 "
+output = model.generate(prompt, max_new_tokens=5, **generate_kwargs)
 print(output)
 
 
-# In[15]:
+# In[ ]:
 
 
-prompt =  "dos tres quatro cinco seis"
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
+prompt =  "3 4 7 11 18 "
+output = model.generate(prompt, max_new_tokens=5, **generate_kwargs)
+print(output)
+
+
+# In[ ]:
+
+
+prompt =  "3 4 7 11 18 29 "
+output = model.generate(prompt, max_new_tokens=5, **generate_kwargs)
+print(output)
+
+
+# In[ ]:
+
+
+prompt =  "3 4 7 11 18 29 47 "
+output = model.generate(prompt, max_new_tokens=5, **generate_kwargs)
+print(output)
+
+
+# In[ ]:
+
+
+prompt =  "Find the next member of this sequence: 3 4 7 11 18 29 "
+output = model.generate(prompt, max_new_tokens=5, **generate_kwargs)
 print(output)
 
 
 # # Import functions from repo
 
-# In[34]:
+# In[11]:
 
 
 get_ipython().system('git clone https://github.com/apartresearch/seqcont_circuits.git')
 get_ipython().run_line_magic('cd', '/content/seqcont_circuits/src/iter_node_pruning')
 
 
-# In[35]:
+# In[12]:
 
 
 # from dataset import Dataset
-from metrics import *
+# from metrics import *
+
+# the fns below will import dataset and metrics anyways, so run the new vers of them in next sections
 from head_ablation_fns import *
 from mlp_ablation_fns import *
 from node_ablation_fns import *
 from loop_node_ablation_fns import *
 
 
-# # Generate dataset with multiple prompts
+# ## redefine logit diff to use last tok
 
-# In[19]:
+# In[13]:
+
+
+def get_logit_diff(logits: Float[Tensor, "batch seq d_vocab"], dataset: Dataset, per_prompt=False):
+    '''
+    '''
+    corr_logits: Float[Tensor, "batch"] = logits[range(logits.size(0)), -1, dataset.corr_tokenIDs]
+    incorr_logits: Float[Tensor, "batch"] = logits[range(logits.size(0)), -1, dataset.incorr_tokenIDs]
+    answer_logit_diff = corr_logits - incorr_logits
+    return answer_logit_diff if per_prompt else answer_logit_diff.mean()
+
+
+# ## redefine dataset to not pad first tok
+
+# In[14]:
 
 
 class Dataset:
@@ -233,7 +261,7 @@ class Dataset:
         self.N = len(prompts)
         self.max_len = max(
             [
-                len(self.tokenizer(prompt["text"]).input_ids)
+                len(self.tokenizer(prompt["text"]).input_ids[1:])
                 for prompt in self.prompts
             ]
         )
@@ -246,7 +274,7 @@ class Dataset:
         texts = [ prompt["text"] for prompt in self.prompts ]
         self.toks = torch.Tensor(self.tokenizer(texts, padding=True).input_ids).type(
             torch.int
-        )
+        )[:, 1:]
         self.corr_tokenIDs = [
             # self.tokenizer.encode(" " + prompt["corr"])[0] for prompt in self.prompts
             self.tokenizer.encode(prompt["corr"])[-1] for prompt in self.prompts
@@ -257,9 +285,7 @@ class Dataset:
         ]
 
         pos_dict = {}
-        # for i in range(1, 4):
-        #     pos_dict['S'+str(i)] = i
-        list_tokens = tokenizer.tokenize('2 4 6 ')
+        list_tokens = tokenizer.tokenize(prompts[0]["text"])
         for i, tok_as_str in enumerate(list_tokens):
             pos_dict['S'+str(i)] = i
 
@@ -271,7 +297,7 @@ class Dataset:
             targ_lst = []
             for prompt in self.prompts:
                 input_text = prompt["text"]
-                tokens = self.tokenizer.tokenize(input_text)
+                # tokens = self.tokenizer.tokenize(input_text)
                 target_index = pos_dict[targ]
                 targ_lst.append(target_index)
             self.word_idx[targ] = torch.tensor(targ_lst)
@@ -288,83 +314,78 @@ class Dataset:
         return self.N
 
 
-# In[27]:
+# # Load datasets
+
+# Because llama-2 tokenizer treats space as a token, remember to ablate even the spaces too, not just the numbers!
+
+# In[15]:
 
 
-words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce']
-
-def generate_prompts_list(x ,y):
+def generate_prompts():
     prompts_list = []
-    for i in range(x, y):
-        prompt_dict = {
-            # 'corr': ' '+words[i+4],
-            # 'incorr': ' '+words[i+3],  # this is arbitrary
-            # 'text': f"{words[i]} {words[i+1]} {words[i+2]} {words[i+3]}"
-            'corr': ' '+words[i+3],
-            'incorr': ' '+words[i+2],  # this is arbitrary
-            'text': f"{words[i]} {words[i+1]} {words[i+2]}"
-        }
-        list_tokens = tokenizer.tokenize(prompt_dict['text'])
-        for i, tok_as_str in enumerate(list_tokens):
-            prompt_dict['S'+str(i)] = tok_as_str
-        prompts_list.append(prompt_dict)
+    prompt_dict = {
+        'corr': '8',
+        'incorr': '1',
+        'text': f"1 1 2 3 5 "
+    }
+    list_tokens = tokenizer.tokenize('1 1 2 3 5 ')
+    for i, tok_as_str in enumerate(list_tokens):
+        # if tok_as_str == '▁':
+        #     prompt_dict['S'+str(i)] = ' '
+        # else:
+        prompt_dict['S'+str(i)] = tok_as_str
+    prompts_list.append(prompt_dict)
     return prompts_list
 
-# prompts_list = generate_prompts_list(0, 8)
-prompts_list = generate_prompts_list(0, 4)
+prompts_list = generate_prompts()
 prompts_list
 
 
-# In[29]:
+# In[16]:
 
 
 import random
-# words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce']
-words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis']
 
-def generate_prompts_list_corr(prompt_list):
-    outlist = []
-    for prompt_dict in prompts_list:
-        r1 = random.choice(words)
-        # r2 = random.choice(words)
-        while True:
-            r3_ind = random.randint(0,len(words)-1)
-            r4_ind = random.randint(0,len(words)-1)
-            if words[r3_ind] != words[r4_ind-1]:
-                break
-        r3 = words[r3_ind]
-        r4 = words[r4_ind]
+def generate_prompts_list_corr():
+    prompts_list = []
+    prompt_dict = {
+        'corr': '8',
+        'incorr': '1',
+        # 'text': f"0 1 2 3 4 "
+        'text': f"5 7 3 6 1 "
+    }
+    list_tokens = tokenizer.tokenize(f"5 7 3 6 1 ")
+    for i, tok_as_str in enumerate(list_tokens):
+        # if tok_as_str == '▁':
+        #     prompt_dict['S'+str(i)] = ' '
+        # else:
+        prompt_dict['S'+str(i)] = tok_as_str
+    prompts_list.append(prompt_dict)
+    return prompts_list
 
-        new_prompt_dict = {
-            'corr': prompt_dict['corr'],
-            'incorr': prompt_dict['incorr'],
-            # 'text': f"{r1} {r2} {r3} {r4}"
-            'text': f"{r1} {r3} {r4}"
-        }
-        list_tokens = tokenizer.tokenize(new_prompt_dict['text'])
-        for i, tok_as_str in enumerate(list_tokens):
-            # if tok_as_str == '▁':
-            #     prompt_dict['S'+str(i)] = ' '
-            # else:
-            #     prompt_dict['S'+str(i)] = tok_as_str
-            new_prompt_dict['S'+str(i)] = tok_as_str
-        outlist.append(new_prompt_dict)
-    return outlist
-
-prompts_list_2 = generate_prompts_list_corr(prompts_list)
+prompts_list_2 = generate_prompts_list_corr()
 prompts_list_2
 
 
-# In[30]:
+# If dos is in front, tokenizer makes it 2 tokens. Else, it's 1 token
+
+# In[17]:
 
 
 dataset = Dataset(prompts_list, model.tokenizer)
+dataset.toks.shape
+
+
+# In[18]:
+
+
 dataset_2 = Dataset(prompts_list_2, model.tokenizer)
+dataset_2.toks.shape
 
 
 # # Get orig score
 
-# In[36]:
+# In[19]:
 
 
 model.reset_hooks(including_permanent=True)
@@ -372,7 +393,7 @@ logits_original = model(dataset.toks)
 orig_score = get_logit_diff(logits_original, dataset)
 
 
-# In[37]:
+# In[20]:
 
 
 next_token = logits_original[0, -1].argmax(dim=-1)  # logits have shape [1, sequence_length, vocab_size]
@@ -380,13 +401,13 @@ next_char = model.to_string(next_token)
 print(repr(next_char))
 
 
-# In[38]:
+# In[21]:
 
 
 orig_score
 
 
-# In[39]:
+# In[22]:
 
 
 import gc
@@ -402,19 +423,19 @@ gc.collect()
 
 # Llama-2 has 32 heads per layer
 
-# In[ ]:
+# In[23]:
 
 
 lst = [(layer, head) for layer in range(32) for head in range(0, 32)]
 CIRCUIT = {}
 SEQ_POS_TO_KEEP = {}
 
-list_tokens = tokenizer.tokenize('uno cinco cuatro tres')
+list_tokens = tokenizer.tokenize(dataset.prompts[0]['text'])
 for i, tok_as_str in enumerate(list_tokens):
     CIRCUIT['S'+str(i)] = lst
     SEQ_POS_TO_KEEP['S'+str(i)] = 'S'+str(i)
-    if i == 5:
-        SEQ_POS_TO_KEEP['S'+str(i)] = 'end'
+    # if i == 5:
+    #     SEQ_POS_TO_KEEP['S'+str(i)] = 'end'
 # for i in range(1, 4):
 #     CIRCUIT['S'+str(i)] = lst
 #     # if i == 3:
@@ -424,38 +445,38 @@ for i, tok_as_str in enumerate(list_tokens):
 SEQ_POS_TO_KEEP
 
 
-# In[ ]:
+# In[24]:
 
 
 model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
 
 model = add_ablation_hook_head(model, means_dataset=dataset_2, circuit=CIRCUIT, seq_pos_to_keep=SEQ_POS_TO_KEEP)
-logits_minimal = model(dataset.toks)
+logits_ablated = model(dataset.toks)
 
-new_score = get_logit_diff(logits_minimal, dataset)
-
-
-# In[ ]:
+new_score = get_logit_diff(logits_ablated, dataset)
 
 
-next_token = logits_minimal[0, -1].argmax(dim=-1)  # logits have shape [1, sequence_length, vocab_size]
+# In[25]:
+
+
+next_token = logits_ablated[0, -1].argmax(dim=-1)  # logits have shape [1, sequence_length, vocab_size]
 next_char = model.to_string(next_token)
 print(repr(next_char))
 
 
-# In[ ]:
+# In[26]:
 
 
 print(f"Average logit difference (circuit / full) %: {100 * new_score / orig_score:.4f}")
 new_score
 
 
-# In[ ]:
+# In[28]:
 
 
 import gc
 
-del(logits_minimal)
+del(logits_ablated)
 torch.cuda.empty_cache()
 gc.collect()
 
@@ -603,11 +624,275 @@ for i in range(32):
     print(i, perc_of_orig)
 
 
+# # Node Ablation- ablate_attnLayer_thenHeads
+
+# In[32]:
+
+
+model.cfg.n_layers
+
+
+# In[33]:
+
+
+model.cfg.n_heads
+
+
+# ## new fns
+
+# In[34]:
+
+
+# from dataset import Dataset
+# from transformer_lens import HookedTransformer, utils
+# from transformer_lens.hook_points import HookPoint
+# import einops
+# from functools import partial
+# import torch as t
+# from torch import Tensor
+# from typing import Dict, Tuple, List
+# from jaxtyping import Float, Bool
+
+# from node_ablation_fns import *
+
+# def find_circuit_forw(model, dataset, dataset_2, heads_not_ablate=None, mlps_not_ablate=None, orig_score=100, threshold=10):
+#     # threshold is T, a %. if performance is less than T%, allow its removal
+#     # we don't ablate the curr circuits
+#     if heads_not_ablate == []: # Start with full circuit
+#         heads_not_ablate = [(layer, head) for layer in range(12) for head in range(12)]
+#     if mlps_not_ablate == []:
+#         mlps_not_ablate = [layer for layer in range(12)]
+
+#     comp_scores = {}
+#     for layer in range(0, 12):
+#         for head in range(12):
+#             print(layer, head)
+#             if (layer, head) not in heads_not_ablate:
+#                 continue
+
+#             copy_heads_not_ablate = heads_not_ablate.copy()
+#             copy_heads_not_ablate.remove((layer, head))
+
+#             model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
+#             ablated_model = add_ablation_hook_MLP_head(model, dataset_2, copy_heads_not_ablate, mlps_not_ablate)
+
+#             new_logits = ablated_model(dataset.toks)
+#             new_score = get_logit_diff(new_logits, dataset)
+#             new_perc = 100 * new_score / orig_score
+#             comp_scores[layer] = new_perc
+#             print(f"(cand circuit / full) %: {new_perc:.4f}")
+#             if (100 - new_perc) < threshold:
+#                 heads_not_ablate.remove((layer, head))
+#                 print("Removed:", (layer, head))
+#             del(new_logits)
+
+#         print(layer)
+#         if layer in mlps_not_ablate:
+#             copy_mlps_not_ablate = mlps_not_ablate.copy()
+#             copy_mlps_not_ablate.remove(layer)
+
+#             model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
+#             ablated_model = add_ablation_hook_MLP_head(model, dataset_2, heads_not_ablate, copy_mlps_not_ablate)
+
+#             new_logits = ablated_model(dataset.toks)
+#             new_score = get_logit_diff(new_logits, dataset)
+#             new_perc = 100 * new_score / orig_score
+#             comp_scores[(layer, head)] = new_perc
+#             print(f"(cand circuit / full) %: {new_perc:.4f}")
+#             if (100 - new_perc) < threshold:
+#                 mlps_not_ablate.remove(layer)
+#                 print("Removed: MLP ", layer)
+#             del(new_logits)
+
+#     return heads_not_ablate, mlps_not_ablate, new_perc, comp_scores
+
+def find_circ_backw_attnL_thenHeads(model, dataset, dataset_2, heads_not_ablate=None, mlps_not_ablate=None, orig_score=100, threshold=10):
+    # threshold is T, a %. if performance is less than T%, allow its removal
+    # we don't ablate the curr circuits
+    if heads_not_ablate == []: # Start with full circuit
+        heads_not_ablate = [(layer, head) for layer in range(model.cfg.n_layers) for head in range(model.cfg.n_heads)]
+    if mlps_not_ablate == []:
+        mlps_not_ablate = [layer for layer in range(model.cfg.n_layers)]
+
+    comp_scores = {}
+    for layer in range(model.cfg.n_layers, -1, -1):  # go thru all heads in a layer first
+        # if layer == 9:
+        #     break
+        print(layer)
+        if layer in mlps_not_ablate:
+            copy_mlps_not_ablate = mlps_not_ablate.copy()
+            copy_mlps_not_ablate.remove(layer)
+
+            model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
+            ablated_model = add_ablation_hook_MLP_head(model, dataset_2, heads_not_ablate, copy_mlps_not_ablate)
+
+            new_logits = ablated_model(dataset.toks)
+            new_score = get_logit_diff(new_logits, dataset)
+            new_perc = 100 * new_score / orig_score
+            comp_scores[layer] = new_perc
+            print(f"(cand circuit MLP / full) %: {new_perc:.4f}")
+            if (100 - new_perc) < threshold:
+                mlps_not_ablate.remove(layer)
+                print("Removed: MLP ", layer)
+            del(new_logits)
+
+        # try removing entire attnLayer first
+        # ablate all heads, so rmv all heads of layer in this copy
+        copy_heads_not_ablate = heads_not_ablate.copy()
+        copy_heads_not_ablate = [(layer_copy, head) for layer_copy, head in copy_heads_not_ablate if layer_copy != layer]
+
+        model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
+        ablated_model = add_ablation_hook_MLP_head(model, dataset_2, copy_heads_not_ablate, mlps_not_ablate)
+
+        new_logits = ablated_model(dataset.toks)
+        new_score = get_logit_diff(new_logits, dataset)
+        new_perc = 100 * new_score / orig_score
+        print(f"(cand circuit AttnL / full) %: {new_perc:.4f}")
+        if (100 - new_perc) < threshold:
+            heads_not_ablate = [(layer_copy, head) for layer_copy, head in heads_not_ablate if layer_copy != layer]
+            print("Removed All Heads in Attention Layer:", (layer))
+        del(new_logits)
+
+        if (100 - new_perc) < threshold:  # eg. new_perc is still 30, thres is 20, so "too close to 100"
+            continue
+
+        for head in range(model.cfg.n_heads):
+            print(layer, head)
+            if (layer, head) not in heads_not_ablate:
+                continue
+
+            copy_heads_not_ablate = heads_not_ablate.copy()
+            copy_heads_not_ablate.remove((layer, head))
+
+            model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
+            ablated_model = add_ablation_hook_MLP_head(model, dataset_2, copy_heads_not_ablate, mlps_not_ablate)
+
+            new_logits = ablated_model(dataset.toks)
+            new_score = get_logit_diff(new_logits, dataset)
+            new_perc = 100 * new_score / orig_score
+            comp_scores[(layer, head)] = new_perc
+            print(f"(cand circuit / full) %: {new_perc:.4f}")
+            if (100 - new_perc) < threshold:
+                heads_not_ablate.remove((layer, head))
+                print("Removed:", (layer, head))
+            del(new_logits)
+
+    return heads_not_ablate, mlps_not_ablate, new_score, comp_scores
+
+
+# ## run
+
+# In[ ]:
+
+
+# threshold = 20
+# curr_circ_heads = []
+# curr_circ_mlps = []
+# prev_score = 100
+# new_score = 0
+# iter = 1
+# all_comp_scores = []
+# while prev_score != new_score:
+#     print('\nbackw prune, iter ', str(iter))
+#     old_circ_heads = curr_circ_heads.copy() # save old before finding new one
+#     old_circ_mlps = curr_circ_mlps.copy()
+#     curr_circ_heads, curr_circ_mlps, new_score, comp_scores = find_circuit_backw(model, dataset, dataset_2, curr_circ_heads, curr_circ_mlps, orig_score, threshold)
+#     if old_circ_heads == curr_circ_heads and old_circ_mlps == curr_circ_mlps:
+#         break
+#     all_comp_scores.append(comp_scores)
+#     print('\nfwd prune, iter ', str(iter))
+#     # track changes in circuit as for some reason it doesn't work with scores
+#     old_circ_heads = curr_circ_heads.copy()
+#     old_circ_mlps = curr_circ_mlps.copy()
+#     curr_circ_heads, curr_circ_mlps, new_score, comp_scores = find_circuit_forw(model, dataset, dataset_2, curr_circ_heads, curr_circ_mlps, orig_score, threshold)
+#     if old_circ_heads == curr_circ_heads and old_circ_mlps == curr_circ_mlps:
+#         break
+#     all_comp_scores.append(comp_scores)
+#     iter += 1
+
+
+# In[35]:
+
+
+threshold = 20
+curr_circ_heads = []
+curr_circ_mlps = []
+prev_score = 100
+new_score = 0
+iter = 1
+all_comp_scores = []
+# while prev_score != new_score:
+# print('\nbackw prune, iter ', str(iter))
+old_circ_heads = curr_circ_heads.copy() # save old before finding new one
+old_circ_mlps = curr_circ_mlps.copy()
+curr_circ_heads, curr_circ_mlps, new_score, comp_scores = find_circ_backw_attnL_thenHeads(model, dataset, dataset_2, curr_circ_heads, curr_circ_mlps, orig_score, threshold)
+
+
+# In[41]:
+
+
+with open('singleDigitFibo_b_20_scores.pkl', 'wb') as file:
+    pickle.dump(all_comp_scores, file)
+files.download('singleDigitFibo_b_20_scores.pkl')
+
+
+# In[36]:
+
+
+curr_circ_heads
+
+
+# In[37]:
+
+
+curr_circ_mlps
+
+
+# ## Find most impt heads from circ
+
+# In[38]:
+
+
+model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
+model = add_ablation_hook_MLP_head(model, dataset_2, curr_circ_heads, curr_circ_mlps)
+
+new_logits = model(dataset.toks)
+new_score = get_logit_diff(new_logits, dataset)
+circ_score = (100 * new_score / orig_score).item()
+print(f"(cand circuit / full) %: {circ_score:.4f}")
+
+
+# In[39]:
+
+
+lh_scores = {}
+for lh in curr_circ_heads:
+    copy_circuit = curr_circ_heads.copy()
+    copy_circuit.remove(lh)
+    print("removed: " + str(lh))
+    model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
+    model = add_ablation_hook_MLP_head(model, dataset_2, copy_circuit, curr_circ_mlps)
+
+    new_logits = model(dataset.toks)
+    new_score = get_logit_diff(new_logits, dataset).item()
+    new_perc = 100 * new_score / orig_score
+    print(f"(cand circuit / full) %: {new_perc:.4f}")
+    lh_scores[lh] = new_perc
+
+
+# In[40]:
+
+
+sorted_lh_scores = dict(sorted(lh_scores.items(), key=lambda item: item[1]))
+for lh, score in sorted_lh_scores.items():
+    print(lh, -round(circ_score-score.item(), 2))
+
+
 # # Node Ablation Iteration
 
 # ## new fns
 
-# In[40]:
+# In[29]:
 
 
 # from dataset import Dataset
@@ -727,7 +1012,7 @@ def find_circuit_backw(model, dataset, dataset_2, heads_not_ablate=None, mlps_no
 
 # ## run
 
-# In[41]:
+# In[30]:
 
 
 # threshold = 20
@@ -756,7 +1041,7 @@ def find_circuit_backw(model, dataset, dataset_2, heads_not_ablate=None, mlps_no
 #     iter += 1
 
 
-# In[42]:
+# In[31]:
 
 
 threshold = 20
@@ -773,21 +1058,21 @@ old_circ_mlps = curr_circ_mlps.copy()
 curr_circ_heads, curr_circ_mlps, new_score, comp_scores = find_circuit_backw(model, dataset, dataset_2, curr_circ_heads, curr_circ_mlps, orig_score, threshold)
 
 
-# In[49]:
+# In[ ]:
 
 
-with open('spanishNW_b_20_scores.pkl', 'wb') as file:
+with open('singleDigitFibo_b_20_scores.pkl', 'wb') as file:
     pickle.dump(all_comp_scores, file)
-files.download('spanishNW_b_20_scores.pkl')
+files.download('singleDigitFibo_b_20_scores.pkl')
 
 
-# In[44]:
+# In[ ]:
 
 
 curr_circ_heads
 
 
-# In[45]:
+# In[ ]:
 
 
 curr_circ_mlps
@@ -795,7 +1080,7 @@ curr_circ_mlps
 
 # ## Find most impt heads from circ
 
-# In[46]:
+# In[ ]:
 
 
 model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
@@ -807,7 +1092,7 @@ circ_score = (100 * new_score / orig_score).item()
 print(f"(cand circuit / full) %: {circ_score:.4f}")
 
 
-# In[47]:
+# In[ ]:
 
 
 lh_scores = {}
@@ -825,7 +1110,7 @@ for lh in curr_circ_heads:
     lh_scores[lh] = new_perc
 
 
-# In[48]:
+# In[ ]:
 
 
 sorted_lh_scores = dict(sorted(lh_scores.items(), key=lambda item: item[1]))

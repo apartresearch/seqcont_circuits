@@ -7,7 +7,7 @@
 
 # # Change Inputs Here
 
-# In[1]:
+# In[ ]:
 
 
 task = "numerals"  # choose: numerals, numwords, months
@@ -22,13 +22,13 @@ run_on_other_tasks = True
 
 # # Setup
 
-# In[2]:
+# In[1]:
 
 
 get_ipython().run_cell_magic('capture', '', '%pip install git+https://github.com/neelnanda-io/TransformerLens.git\n')
 
 
-# In[3]:
+# In[2]:
 
 
 import torch
@@ -62,7 +62,7 @@ import matplotlib.pyplot as plt
 import statistics
 
 
-# In[4]:
+# In[3]:
 
 
 import transformer_lens
@@ -76,7 +76,7 @@ from transformer_lens import HookedTransformer, HookedTransformerConfig, Factore
 
 # We turn automatic differentiation off, to save GPU memory, as this notebook focuses on model inference not model training.
 
-# In[5]:
+# In[4]:
 
 
 torch.set_grad_enabled(False)
@@ -84,19 +84,19 @@ torch.set_grad_enabled(False)
 
 # # Load Model
 
-# In[6]:
+# In[5]:
 
 
 from transformers import LlamaForCausalLM, LlamaTokenizer
 
 
-# In[7]:
+# In[6]:
 
 
 get_ipython().system('huggingface-cli login')
 
 
-# In[8]:
+# In[7]:
 
 
 LLAMA_2_7B_CHAT_PATH = "meta-llama/Llama-2-7b-chat-hf"
@@ -106,7 +106,7 @@ tokenizer = LlamaTokenizer.from_pretrained(LLAMA_2_7B_CHAT_PATH)
 hf_model = LlamaForCausalLM.from_pretrained(LLAMA_2_7B_CHAT_PATH, low_cpu_mem_usage=True)
 
 
-# In[9]:
+# In[8]:
 
 
 import transformer_lens.utils as utils
@@ -114,7 +114,7 @@ from transformer_lens.hook_points import HookPoint
 from transformer_lens import HookedTransformer
 
 
-# In[10]:
+# In[9]:
 
 
 model = HookedTransformer.from_pretrained(
@@ -132,85 +132,16 @@ del hf_model
 model = model.to("cuda" if torch.cuda.is_available() else "cpu")
 
 
-# # Test prompts
-
-# In[ ]:
-
-
-words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce']
-
-
-# In[11]:
-
-
-# Get list of arguments to pass to `generate` (specifically these are the ones relating to sampling)
-generate_kwargs = dict(
-    do_sample = False, # deterministic output so we can compare it to the HF model
-    top_p = 1.0, # suppresses annoying output errors
-    temperature = 1.0, # suppresses annoying output errors
-)
-
-prompt =  "siete ocho nueve"
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
-print(output)
-
-
-# In[13]:
-
-
-prompt =  "siete ocho nueve "
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
-print(output)
-
-
-# Because llama-2 tokenizer treats space as a token, remember to ablate even the spaces too, not just the numbers!
-
-# In[12]:
-
-
-tokenizer.tokenize('siete ocho nueve diez')
-
-
-# In[14]:
-
-
-prompt =  "dos tres cuatro cinco"
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
-print(output)
-
-
-# In[18]:
-
-
-tokenizer.tokenize("dos tres cuatro cinco")
-
-
-# In[17]:
-
-
-prompt =  "uno dos tres"
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
-print(output)
-
-
-# In[15]:
-
-
-prompt =  "dos tres quatro cinco seis"
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
-print(output)
-
-
 # # Import functions from repo
 
-# In[34]:
+# In[10]:
 
 
 get_ipython().system('git clone https://github.com/apartresearch/seqcont_circuits.git')
 get_ipython().run_line_magic('cd', '/content/seqcont_circuits/src/iter_node_pruning')
 
 
-# In[35]:
+# In[11]:
 
 
 # from dataset import Dataset
@@ -221,9 +152,59 @@ from node_ablation_fns import *
 from loop_node_ablation_fns import *
 
 
+# # test utils prompts
+
+# In[ ]:
+
+
+example_prompt = "1 2"
+example_answer = " 4"
+utils.test_prompt(example_prompt, example_answer, model, prepend_bos=True)
+
+
+# In[ ]:
+
+
+example_prompt = "1 2 3"
+example_answer = " 4"
+utils.test_prompt(example_prompt, example_answer, model, prepend_bos=True)
+
+
+# In[ ]:
+
+
+example_prompt = "5 6 7"
+example_answer = " 8"
+utils.test_prompt(example_prompt, example_answer, model, prepend_bos=True)
+
+
+# In[ ]:
+
+
+example_prompt = "3 5 7"
+example_answer = " 9"
+utils.test_prompt(example_prompt, example_answer, model, prepend_bos=True)
+
+
+# In[ ]:
+
+
+example_prompt = "2 4 6"
+example_answer = " 8"
+utils.test_prompt(example_prompt, example_answer, model, prepend_bos=True)
+
+
+# In[ ]:
+
+
+example_prompt = "200 300 400"
+example_answer = " 500"
+utils.test_prompt(example_prompt, example_answer, model, prepend_bos=True)
+
+
 # # Generate dataset with multiple prompts
 
-# In[19]:
+# In[62]:
 
 
 class Dataset:
@@ -257,9 +238,7 @@ class Dataset:
         ]
 
         pos_dict = {}
-        # for i in range(1, 4):
-        #     pos_dict['S'+str(i)] = i
-        list_tokens = tokenizer.tokenize('2 4 6 ')
+        list_tokens = tokenizer.tokenize((prompts[0]["text"]))
         for i, tok_as_str in enumerate(list_tokens):
             pos_dict['S'+str(i)] = i
 
@@ -288,58 +267,89 @@ class Dataset:
         return self.N
 
 
-# In[27]:
+# In[63]:
 
-
-words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce']
 
 def generate_prompts_list(x ,y):
     prompts_list = []
     for i in range(x, y):
         prompt_dict = {
-            # 'corr': ' '+words[i+4],
-            # 'incorr': ' '+words[i+3],  # this is arbitrary
-            # 'text': f"{words[i]} {words[i+1]} {words[i+2]} {words[i+3]}"
-            'corr': ' '+words[i+3],
-            'incorr': ' '+words[i+2],  # this is arbitrary
-            'text': f"{words[i]} {words[i+1]} {words[i+2]}"
+            'corr': str(i+4),
+            'incorr': str(i+3),
+            'text': f"{i} {i+1} {i+2} {i+3} "
         }
         list_tokens = tokenizer.tokenize(prompt_dict['text'])
         for i, tok_as_str in enumerate(list_tokens):
+            # if tok_as_str == '▁':
+            #     prompt_dict['S'+str(i)] = ' '
+            # else:
+            #     prompt_dict['S'+str(i)] = tok_as_str
             prompt_dict['S'+str(i)] = tok_as_str
         prompts_list.append(prompt_dict)
     return prompts_list
 
-# prompts_list = generate_prompts_list(0, 8)
-prompts_list = generate_prompts_list(0, 4)
+# prompts_list = generate_prompts_list(1, 9)
+prompts_list = generate_prompts_list(1, 6)
 prompts_list
 
 
-# In[29]:
+# In[64]:
+
+
+# import random
+
+# def generate_prompts_list_corr(prompt_list):
+#     outlist = []
+#     for prompt_dict in prompts_list:
+#         r1 = random.choice(words)
+#         r2 = random.choice(words)
+#         while True:
+#             r3_ind = random.randint(0,len(words)-1)
+#             r4_ind = random.randint(0,len(words)-1)
+#             if words[r3_ind] != words[r4_ind-1]:
+#                 break
+#         r3 = words[r3_ind]
+#         r4 = words[r4_ind]
+
+#         new_prompt_dict = {
+#             'corr': prompt_dict['corr'],
+#             'incorr': prompt_dict['incorr'],
+#             'text': f"{r1} {r2} {r3} {r4}"
+#         }
+#         list_tokens = tokenizer.tokenize(new_prompt_dict['text'])
+#         for i, tok_as_str in enumerate(list_tokens):
+#             # if tok_as_str == '▁':
+#             #     prompt_dict['S'+str(i)] = ' '
+#             # else:
+#             #     prompt_dict['S'+str(i)] = tok_as_str
+#             new_prompt_dict['S'+str(i)] = tok_as_str
+#         outlist.append(new_prompt_dict)
+#     return outlist
+
+# prompts_list_2 = generate_prompts_list_corr(prompts_list)
+# prompts_list_2
+
+
+# In[65]:
 
 
 import random
-# words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce']
-words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis']
 
 def generate_prompts_list_corr(prompt_list):
     outlist = []
     for prompt_dict in prompts_list:
-        r1 = random.choice(words)
-        # r2 = random.choice(words)
+        r1 = random.randint(1, 9)
+        r2 = random.randint(1, 9)
         while True:
-            r3_ind = random.randint(0,len(words)-1)
-            r4_ind = random.randint(0,len(words)-1)
-            if words[r3_ind] != words[r4_ind-1]:
+            r3 = random.randint(1, 9)
+            r4 = random.randint(1, 9)
+            if r4 - 1 != r3:
                 break
-        r3 = words[r3_ind]
-        r4 = words[r4_ind]
-
+        # new_text = prompt_dict['text'].replace(prompt_dict['S1'], str(r1)).replace(prompt_dict['S2'], str(r2)).replace(prompt_dict['S3'], str(r3)).replace(prompt_dict['S4'], str(r4))
         new_prompt_dict = {
             'corr': prompt_dict['corr'],
             'incorr': prompt_dict['incorr'],
-            # 'text': f"{r1} {r2} {r3} {r4}"
-            'text': f"{r1} {r3} {r4}"
+            'text': f"{r1} {r2} {r3} {r4} "
         }
         list_tokens = tokenizer.tokenize(new_prompt_dict['text'])
         for i, tok_as_str in enumerate(list_tokens):
@@ -350,21 +360,26 @@ def generate_prompts_list_corr(prompt_list):
             new_prompt_dict['S'+str(i)] = tok_as_str
         outlist.append(new_prompt_dict)
     return outlist
-
 prompts_list_2 = generate_prompts_list_corr(prompts_list)
 prompts_list_2
 
 
-# In[30]:
+# In[66]:
 
 
 dataset = Dataset(prompts_list, model.tokenizer)
 dataset_2 = Dataset(prompts_list_2, model.tokenizer)
 
 
+# In[67]:
+
+
+dataset.word_idx.keys()
+
+
 # # Get orig score
 
-# In[36]:
+# In[23]:
 
 
 model.reset_hooks(including_permanent=True)
@@ -372,7 +387,7 @@ logits_original = model(dataset.toks)
 orig_score = get_logit_diff(logits_original, dataset)
 
 
-# In[37]:
+# In[24]:
 
 
 next_token = logits_original[0, -1].argmax(dim=-1)  # logits have shape [1, sequence_length, vocab_size]
@@ -380,13 +395,13 @@ next_char = model.to_string(next_token)
 print(repr(next_char))
 
 
-# In[38]:
+# In[25]:
 
 
 orig_score
 
 
-# In[39]:
+# In[26]:
 
 
 import gc
@@ -394,6 +409,122 @@ import gc
 del(logits_original)
 torch.cuda.empty_cache()
 gc.collect()
+
+
+# # ablation fns mult tok answers
+
+# In[ ]:
+
+
+def clean_gen(model, clean_text, corr_ans):
+    model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
+    tokens = model.to_tokens(clean_text).to(device)
+
+    total_score = 0
+    corr_ans_tokLen = 0
+    ans_so_far = ''
+    # while True:
+    for i in range(5):
+        print(f"Sequence so far: {model.to_string(tokens)[0]!r}")
+        logits = model(tokens)
+        next_token = logits[0, -1].argmax(dim=-1) # Get the predicted token at the end of our sequence
+        next_char = model.to_string(next_token)
+        if next_char == '':
+            next_char = ' '
+
+        correct_logits = logits[:, -1, next_token]
+        total_score += correct_logits
+        # print(f"logit of new tok: {correct_logits}")
+
+        ans_so_far += next_char
+        corr_ans_tokLen += 1
+        print(f"{tokens.shape[-1]+1}th char = {next_char!r}")
+        if ans_so_far == corr_ans:
+            print('\nTotal logits: ', total_score.item())
+            break
+
+        # Define new input sequence, by appending the previously generated token
+        tokens = torch.cat([tokens, next_token[None, None]], dim=-1)
+    return corr_ans_tokLen, total_score.item()
+
+
+# In[ ]:
+
+
+def ablate_then_gen(model, clean_text, corr_text, heads_not_ablate, mlps_not_ablate, corr_ans_tokLen):
+    tokens = model.to_tokens(clean_text).to(device)
+    prompts_list = generate_prompts_list_longer(clean_text, tokens)
+
+    corr_tokens = model.to_tokens(corr_text).to(device)
+    prompts_list_2 = generate_prompts_list_longer(corr_text, corr_tokens)
+
+    model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
+    pos_dict = {}
+    num_pos = len(model.tokenizer(prompts_list_2[0]['text']).input_ids)
+    for i in range(num_pos ):
+        pos_dict['S'+str(i)] = i
+    dataset_2 = Dataset(prompts_list_2, pos_dict, model.tokenizer)
+    model = add_ablation_hook_MLP_head(model, dataset_2, heads_not_ablate, mlps_not_ablate)
+
+    logits = model(tokens)
+    next_token = logits[0, -1].argmax(dim=-1)
+    next_char = model.to_string(next_token)
+
+    total_score = 0
+
+    for i in range(corr_ans_tokLen):
+        if next_char == '':
+            next_char = ' '
+
+        clean_text = clean_text + next_char
+        print(f"Sequence so far: {clean_text}")
+        print(f"{tokens.shape[-1]+1}th char = {next_char!r}")
+
+        tokens = torch.cat([tokens, next_token[None, None]], dim=-1)
+
+        # get new ablation dataset
+        # model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
+
+        # corr_text = corr_text + next_char
+        # # corr_tokens = model.to_tokens(corr_text).to(device)
+
+        # # corr_text = model.to_string(corr_tokens)[0]
+        # corr_tokens = torch.cat([corr_tokens, next_token[None, None]], dim=-1)
+        # prompts_list_2 = generate_prompts_list_longer(corr_text, corr_tokens)
+        # print(corr_text)
+        # # print(corr_tokens.shape)
+
+        # pos_dict = {}
+        # # for i in range(len(model.tokenizer.tokenize(prompts_list_2[0]['text']))):
+        # # for i in range(corr_tokens.shape[1]):
+        # num_pos = len(model.tokenizer(prompts_list_2[0]['text']).input_ids)
+        # # for i in range(num_pos + 1):
+        # for i in range(num_pos ):
+        #     pos_dict['S'+str(i)] = i
+
+        # # dataset_2 = Dataset(prompts_list_2, pos_dict, model.tokenizer)
+        # dataset_2 = Dataset(prompts_list_2, pos_dict, model.tokenizer, corr_tokens)
+
+        # model = add_ablation_hook_MLP_head(model, dataset_2, heads_not_ablate, mlps_not_ablate)
+
+        logits = model(tokens)
+        next_token = logits[0, -1].argmax(dim=-1) # Get the predicted token at the end of our sequence
+        next_char = model.to_string(next_token)
+
+        # new_score = get_logit_diff(logits, dataset)
+        corrTok_logits = logits[:, -1, next_token]
+        total_score += corrTok_logits
+        # print(f"corr logit of new char: {corrTok_logits}")
+    print('\nTotal corr logit: ', total_score.item())
+    return total_score.item()
+
+
+# # test clean run
+
+# In[ ]:
+
+
+
 
 
 # # Find Impt Attention Heads from Full
@@ -409,18 +540,13 @@ lst = [(layer, head) for layer in range(32) for head in range(0, 32)]
 CIRCUIT = {}
 SEQ_POS_TO_KEEP = {}
 
-list_tokens = tokenizer.tokenize('uno cinco cuatro tres')
+list_tokens = tokenizer.tokenize(dataset.prompts[0]['text'])
 for i, tok_as_str in enumerate(list_tokens):
     CIRCUIT['S'+str(i)] = lst
-    SEQ_POS_TO_KEEP['S'+str(i)] = 'S'+str(i)
-    if i == 5:
+    if i == len(list_tokens) - 1:
         SEQ_POS_TO_KEEP['S'+str(i)] = 'end'
-# for i in range(1, 4):
-#     CIRCUIT['S'+str(i)] = lst
-#     # if i == 3:
-#     #     SEQ_POS_TO_KEEP['S'+str(i)] = 'end'
-#     # else:
-#     SEQ_POS_TO_KEEP['S'+str(i)] = 'S'+str(i)
+    else:
+        SEQ_POS_TO_KEEP['S'+str(i)] = 'S'+str(i)
 SEQ_POS_TO_KEEP
 
 
@@ -428,6 +554,14 @@ SEQ_POS_TO_KEEP
 
 
 model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
+
+# clean_text = "12 14 16"
+# corr_text = "15 12 17"
+# heads_not_ablate = []  # ablate all heads but not MLPs
+# mlps_not_ablate = []  # ablate all MLPs
+# # ablated_score = ablate_then_gen(model, clean_text, corr_text, heads_not_ablate, mlps_not_ablate, corr_ans_tokLen)
+
+# ablated_score = ablate_then_gen(model, dataset.toks, dataset_2.toks, heads_not_ablate, mlps_not_ablate, corr_ans_tokLen)
 
 model = add_ablation_hook_head(model, means_dataset=dataset_2, circuit=CIRCUIT, seq_pos_to_keep=SEQ_POS_TO_KEEP)
 logits_minimal = model(dataset.toks)
@@ -477,11 +611,11 @@ def ablate_head_from_full(
     CIRCUIT = {}
     SEQ_POS_TO_KEEP = {}
 
-    list_tokens = tokenizer.tokenize('uno cinco cuatro tres')
+    list_tokens = tokenizer.tokenize('1 2 3 4')
     for i, tok_as_str in enumerate(list_tokens):
         CIRCUIT['S'+str(i)] = lst
         SEQ_POS_TO_KEEP['S'+str(i)] = 'S'+str(i)
-        if i == 5:
+        if i == 7:
             SEQ_POS_TO_KEEP['S'+str(i)] = 'end'
 
     model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
@@ -607,7 +741,7 @@ for i in range(32):
 
 # ## new fns
 
-# In[40]:
+# In[68]:
 
 
 # from dataset import Dataset
@@ -727,7 +861,7 @@ def find_circuit_backw(model, dataset, dataset_2, heads_not_ablate=None, mlps_no
 
 # ## run
 
-# In[41]:
+# In[69]:
 
 
 # threshold = 20
@@ -756,7 +890,7 @@ def find_circuit_backw(model, dataset, dataset_2, heads_not_ablate=None, mlps_no
 #     iter += 1
 
 
-# In[42]:
+# In[ ]:
 
 
 threshold = 20
@@ -773,21 +907,21 @@ old_circ_mlps = curr_circ_mlps.copy()
 curr_circ_heads, curr_circ_mlps, new_score, comp_scores = find_circuit_backw(model, dataset, dataset_2, curr_circ_heads, curr_circ_mlps, orig_score, threshold)
 
 
-# In[49]:
+# In[ ]:
 
 
-with open('spanishNW_b_20_scores.pkl', 'wb') as file:
+with open('numwords_b_20_scores.pkl', 'wb') as file:
     pickle.dump(all_comp_scores, file)
-files.download('spanishNW_b_20_scores.pkl')
+files.download('numwords_b_20_scores.pkl')
 
 
-# In[44]:
+# In[ ]:
 
 
 curr_circ_heads
 
 
-# In[45]:
+# In[ ]:
 
 
 curr_circ_mlps
@@ -795,7 +929,7 @@ curr_circ_mlps
 
 # ## Find most impt heads from circ
 
-# In[46]:
+# In[ ]:
 
 
 model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
@@ -807,7 +941,7 @@ circ_score = (100 * new_score / orig_score).item()
 print(f"(cand circuit / full) %: {circ_score:.4f}")
 
 
-# In[47]:
+# In[ ]:
 
 
 lh_scores = {}
@@ -825,7 +959,7 @@ for lh in curr_circ_heads:
     lh_scores[lh] = new_perc
 
 
-# In[48]:
+# In[ ]:
 
 
 sorted_lh_scores = dict(sorted(lh_scores.items(), key=lambda item: item[1]))

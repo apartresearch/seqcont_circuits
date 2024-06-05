@@ -5,30 +5,15 @@
 
 # This will save files to your local machine if `save_files` is set to True.
 
-# # Change Inputs Here
-
-# In[1]:
-
-
-task = "numerals"  # choose: numerals, numwords, months
-prompt_types = ['done', 'lost', 'names']
-num_samps_per_ptype = 4 #768 512
-
-# model_name = "gpt2-small"
-
-save_files = True
-run_on_other_tasks = True
-
-
 # # Setup
 
-# In[2]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('capture', '', '%pip install git+https://github.com/neelnanda-io/TransformerLens.git\n')
 
 
-# In[3]:
+# In[ ]:
 
 
 import torch
@@ -62,7 +47,7 @@ import matplotlib.pyplot as plt
 import statistics
 
 
-# In[4]:
+# In[ ]:
 
 
 import transformer_lens
@@ -76,27 +61,33 @@ from transformer_lens import HookedTransformer, HookedTransformerConfig, Factore
 
 # We turn automatic differentiation off, to save GPU memory, as this notebook focuses on model inference not model training.
 
-# In[5]:
+# In[ ]:
 
 
 torch.set_grad_enabled(False)
 
 
+# In[ ]:
+
+
+save_files = True
+
+
 # # Load Model
 
-# In[6]:
+# In[ ]:
 
 
 from transformers import LlamaForCausalLM, LlamaTokenizer
 
 
-# In[7]:
+# In[ ]:
 
 
 get_ipython().system('huggingface-cli login')
 
 
-# In[8]:
+# In[ ]:
 
 
 LLAMA_2_7B_CHAT_PATH = "meta-llama/Llama-2-7b-chat-hf"
@@ -106,7 +97,7 @@ tokenizer = LlamaTokenizer.from_pretrained(LLAMA_2_7B_CHAT_PATH)
 hf_model = LlamaForCausalLM.from_pretrained(LLAMA_2_7B_CHAT_PATH, low_cpu_mem_usage=True)
 
 
-# In[9]:
+# In[ ]:
 
 
 import transformer_lens.utils as utils
@@ -114,7 +105,7 @@ from transformer_lens.hook_points import HookPoint
 from transformer_lens import HookedTransformer
 
 
-# In[10]:
+# In[ ]:
 
 
 model = HookedTransformer.from_pretrained(
@@ -137,10 +128,19 @@ model = model.to("cuda" if torch.cuda.is_available() else "cpu")
 # In[ ]:
 
 
-words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce']
+# Get list of arguments to pass to `generate` (specifically these are the ones relating to sampling)
+generate_kwargs = dict(
+    do_sample = False, # deterministic output so we can compare it to the HF model
+    top_p = 1.0, # suppresses annoying output errors
+    temperature = 1.0, # suppresses annoying output errors
+)
+
+prompt =  "10 11 12 13 1"
+output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
+print(output)
 
 
-# In[11]:
+# In[ ]:
 
 
 # Get list of arguments to pass to `generate` (specifically these are the ones relating to sampling)
@@ -150,67 +150,21 @@ generate_kwargs = dict(
     temperature = 1.0, # suppresses annoying output errors
 )
 
-prompt =  "siete ocho nueve"
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
-print(output)
-
-
-# In[13]:
-
-
-prompt =  "siete ocho nueve "
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
-print(output)
-
-
-# Because llama-2 tokenizer treats space as a token, remember to ablate even the spaces too, not just the numbers!
-
-# In[12]:
-
-
-tokenizer.tokenize('siete ocho nueve diez')
-
-
-# In[14]:
-
-
-prompt =  "dos tres cuatro cinco"
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
-print(output)
-
-
-# In[18]:
-
-
-tokenizer.tokenize("dos tres cuatro cinco")
-
-
-# In[17]:
-
-
-prompt =  "uno dos tres"
-output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
-print(output)
-
-
-# In[15]:
-
-
-prompt =  "dos tres quatro cinco seis"
+prompt =  "15 16 17 18 1"
 output = model.generate(prompt, max_new_tokens=1, **generate_kwargs)
 print(output)
 
 
 # # Import functions from repo
 
-# In[34]:
+# In[ ]:
 
 
 get_ipython().system('git clone https://github.com/apartresearch/seqcont_circuits.git')
 get_ipython().run_line_magic('cd', '/content/seqcont_circuits/src/iter_node_pruning')
 
 
-# In[35]:
+# In[ ]:
 
 
 # from dataset import Dataset
@@ -221,9 +175,23 @@ from node_ablation_fns import *
 from loop_node_ablation_fns import *
 
 
-# # Generate dataset with multiple prompts
+# ## redefine logit diff to use last tok
 
-# In[19]:
+# In[ ]:
+
+
+def get_logit_diff(logits: Float[Tensor, "batch seq d_vocab"], dataset: Dataset, per_prompt=False):
+    '''
+    '''
+    corr_logits: Float[Tensor, "batch"] = logits[range(logits.size(0)), -1, dataset.corr_tokenIDs]
+    incorr_logits: Float[Tensor, "batch"] = logits[range(logits.size(0)), -1, dataset.incorr_tokenIDs]
+    answer_logit_diff = corr_logits - incorr_logits
+    return answer_logit_diff if per_prompt else answer_logit_diff.mean()
+
+
+# ## redefine dataset to not pad first tok
+
+# In[ ]:
 
 
 class Dataset:
@@ -233,7 +201,7 @@ class Dataset:
         self.N = len(prompts)
         self.max_len = max(
             [
-                len(self.tokenizer(prompt["text"]).input_ids)
+                len(self.tokenizer(prompt["text"]).input_ids[1:])
                 for prompt in self.prompts
             ]
         )
@@ -246,7 +214,7 @@ class Dataset:
         texts = [ prompt["text"] for prompt in self.prompts ]
         self.toks = torch.Tensor(self.tokenizer(texts, padding=True).input_ids).type(
             torch.int
-        )
+        )[:, 1:]
         self.corr_tokenIDs = [
             # self.tokenizer.encode(" " + prompt["corr"])[0] for prompt in self.prompts
             self.tokenizer.encode(prompt["corr"])[-1] for prompt in self.prompts
@@ -257,9 +225,7 @@ class Dataset:
         ]
 
         pos_dict = {}
-        # for i in range(1, 4):
-        #     pos_dict['S'+str(i)] = i
-        list_tokens = tokenizer.tokenize('2 4 6 ')
+        list_tokens = tokenizer.tokenize(prompts[0]["text"])
         for i, tok_as_str in enumerate(list_tokens):
             pos_dict['S'+str(i)] = i
 
@@ -271,7 +237,7 @@ class Dataset:
             targ_lst = []
             for prompt in self.prompts:
                 input_text = prompt["text"]
-                tokens = self.tokenizer.tokenize(input_text)
+                # tokens = self.tokenizer.tokenize(input_text)
                 target_index = pos_dict[targ]
                 targ_lst.append(target_index)
             self.word_idx[targ] = torch.tensor(targ_lst)
@@ -288,83 +254,75 @@ class Dataset:
         return self.N
 
 
-# In[27]:
+# # Load datasets
+
+# Because llama-2 tokenizer treats space as a token, remember to ablate even the spaces too, not just the numbers!
+
+# In[ ]:
 
 
-words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce']
-
-def generate_prompts_list(x ,y):
+def generate_prompts():
     prompts_list = []
-    for i in range(x, y):
-        prompt_dict = {
-            # 'corr': ' '+words[i+4],
-            # 'incorr': ' '+words[i+3],  # this is arbitrary
-            # 'text': f"{words[i]} {words[i+1]} {words[i+2]} {words[i+3]}"
-            'corr': ' '+words[i+3],
-            'incorr': ' '+words[i+2],  # this is arbitrary
-            'text': f"{words[i]} {words[i+1]} {words[i+2]}"
-        }
-        list_tokens = tokenizer.tokenize(prompt_dict['text'])
-        for i, tok_as_str in enumerate(list_tokens):
-            prompt_dict['S'+str(i)] = tok_as_str
-        prompts_list.append(prompt_dict)
+    prompt_dict = {
+        'corr': '4',
+        'incorr': '3',
+        'text': '10 11 12 13 1'
+    }
+    list_tokens = tokenizer.tokenize('10 11 12 13 1')
+    for i, tok_as_str in enumerate(list_tokens):
+        # if tok_as_str == '▁':
+        #     prompt_dict['S'+str(i)] = ' '
+        # else:
+        prompt_dict['S'+str(i)] = tok_as_str
+    prompts_list.append(prompt_dict)
     return prompts_list
 
-# prompts_list = generate_prompts_list(0, 8)
-prompts_list = generate_prompts_list(0, 4)
+prompts_list = generate_prompts()
 prompts_list
 
 
-# In[29]:
+# In[ ]:
 
 
 import random
-# words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce']
-words = ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis']
 
-def generate_prompts_list_corr(prompt_list):
-    outlist = []
-    for prompt_dict in prompts_list:
-        r1 = random.choice(words)
-        # r2 = random.choice(words)
-        while True:
-            r3_ind = random.randint(0,len(words)-1)
-            r4_ind = random.randint(0,len(words)-1)
-            if words[r3_ind] != words[r4_ind-1]:
-                break
-        r3 = words[r3_ind]
-        r4 = words[r4_ind]
+def generate_prompts_list_corr():
+    prompts_list = []
+    prompt_dict = {
+        'corr': '4',
+        'incorr': '3',
+        'text': f"18 12 14 15 1"
+    }
+    list_tokens = tokenizer.tokenize(f"18 12 14 15 1")
+    for i, tok_as_str in enumerate(list_tokens):
+        # if tok_as_str == '▁':
+        #     prompt_dict['S'+str(i)] = ' '
+        # else:
+        prompt_dict['S'+str(i)] = tok_as_str
+    prompts_list.append(prompt_dict)
+    return prompts_list
 
-        new_prompt_dict = {
-            'corr': prompt_dict['corr'],
-            'incorr': prompt_dict['incorr'],
-            # 'text': f"{r1} {r2} {r3} {r4}"
-            'text': f"{r1} {r3} {r4}"
-        }
-        list_tokens = tokenizer.tokenize(new_prompt_dict['text'])
-        for i, tok_as_str in enumerate(list_tokens):
-            # if tok_as_str == '▁':
-            #     prompt_dict['S'+str(i)] = ' '
-            # else:
-            #     prompt_dict['S'+str(i)] = tok_as_str
-            new_prompt_dict['S'+str(i)] = tok_as_str
-        outlist.append(new_prompt_dict)
-    return outlist
-
-prompts_list_2 = generate_prompts_list_corr(prompts_list)
+prompts_list_2 = generate_prompts_list_corr()
 prompts_list_2
 
 
-# In[30]:
+# In[ ]:
 
 
 dataset = Dataset(prompts_list, model.tokenizer)
-dataset_2 = Dataset(prompts_list_2, model.tokenizer)
+dataset.toks.shape
+
+
+# In[ ]:
+
+
+dataset_2 = Dataset(prompts_list_2, model.tokenizer) #, S1_is_first=True)
+dataset_2.toks.shape
 
 
 # # Get orig score
 
-# In[36]:
+# In[ ]:
 
 
 model.reset_hooks(including_permanent=True)
@@ -372,7 +330,7 @@ logits_original = model(dataset.toks)
 orig_score = get_logit_diff(logits_original, dataset)
 
 
-# In[37]:
+# In[ ]:
 
 
 next_token = logits_original[0, -1].argmax(dim=-1)  # logits have shape [1, sequence_length, vocab_size]
@@ -380,13 +338,13 @@ next_char = model.to_string(next_token)
 print(repr(next_char))
 
 
-# In[38]:
+# In[ ]:
 
 
 orig_score
 
 
-# In[39]:
+# In[ ]:
 
 
 import gc
@@ -409,18 +367,12 @@ lst = [(layer, head) for layer in range(32) for head in range(0, 32)]
 CIRCUIT = {}
 SEQ_POS_TO_KEEP = {}
 
-list_tokens = tokenizer.tokenize('uno cinco cuatro tres')
+list_tokens = tokenizer.tokenize(dataset.prompts[0]['text'])
 for i, tok_as_str in enumerate(list_tokens):
     CIRCUIT['S'+str(i)] = lst
     SEQ_POS_TO_KEEP['S'+str(i)] = 'S'+str(i)
-    if i == 5:
-        SEQ_POS_TO_KEEP['S'+str(i)] = 'end'
-# for i in range(1, 4):
-#     CIRCUIT['S'+str(i)] = lst
-#     # if i == 3:
-#     #     SEQ_POS_TO_KEEP['S'+str(i)] = 'end'
-#     # else:
-#     SEQ_POS_TO_KEEP['S'+str(i)] = 'S'+str(i)
+    # if i == len(list_tokens)-1:
+    #     SEQ_POS_TO_KEEP['S'+str(i)] = 'end'
 SEQ_POS_TO_KEEP
 
 
@@ -430,15 +382,15 @@ SEQ_POS_TO_KEEP
 model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
 
 model = add_ablation_hook_head(model, means_dataset=dataset_2, circuit=CIRCUIT, seq_pos_to_keep=SEQ_POS_TO_KEEP)
-logits_minimal = model(dataset.toks)
+logits_ablated = model(dataset.toks)
 
-new_score = get_logit_diff(logits_minimal, dataset)
+new_score = get_logit_diff(logits_ablated, dataset)
 
 
 # In[ ]:
 
 
-next_token = logits_minimal[0, -1].argmax(dim=-1)  # logits have shape [1, sequence_length, vocab_size]
+next_token = logits_ablated[0, -1].argmax(dim=-1)  # logits have shape [1, sequence_length, vocab_size]
 next_char = model.to_string(next_token)
 print(repr(next_char))
 
@@ -455,7 +407,7 @@ new_score
 
 import gc
 
-del(logits_minimal)
+del(logits_ablated)
 torch.cuda.empty_cache()
 gc.collect()
 
@@ -607,7 +559,7 @@ for i in range(32):
 
 # ## new fns
 
-# In[40]:
+# In[ ]:
 
 
 # from dataset import Dataset
@@ -727,7 +679,7 @@ def find_circuit_backw(model, dataset, dataset_2, heads_not_ablate=None, mlps_no
 
 # ## run
 
-# In[41]:
+# In[ ]:
 
 
 # threshold = 20
@@ -756,7 +708,7 @@ def find_circuit_backw(model, dataset, dataset_2, heads_not_ablate=None, mlps_no
 #     iter += 1
 
 
-# In[42]:
+# In[31]:
 
 
 threshold = 20
@@ -773,21 +725,21 @@ old_circ_mlps = curr_circ_mlps.copy()
 curr_circ_heads, curr_circ_mlps, new_score, comp_scores = find_circuit_backw(model, dataset, dataset_2, curr_circ_heads, curr_circ_mlps, orig_score, threshold)
 
 
-# In[49]:
+# In[32]:
 
 
-with open('spanishNW_b_20_scores.pkl', 'wb') as file:
+with open('GiveFirstDigit_1prompt_b_20_scores.pkl', 'wb') as file:
     pickle.dump(all_comp_scores, file)
-files.download('spanishNW_b_20_scores.pkl')
+files.download('GiveFirstDigit_1prompt_b_20_scores.pkl')
 
 
-# In[44]:
+# In[33]:
 
 
 curr_circ_heads
 
 
-# In[45]:
+# In[34]:
 
 
 curr_circ_mlps
@@ -795,7 +747,7 @@ curr_circ_mlps
 
 # ## Find most impt heads from circ
 
-# In[46]:
+# In[35]:
 
 
 model.reset_hooks(including_permanent=True)  #must do this after running with mean ablation hook
@@ -807,7 +759,7 @@ circ_score = (100 * new_score / orig_score).item()
 print(f"(cand circuit / full) %: {circ_score:.4f}")
 
 
-# In[47]:
+# In[36]:
 
 
 lh_scores = {}
@@ -825,7 +777,7 @@ for lh in curr_circ_heads:
     lh_scores[lh] = new_perc
 
 
-# In[48]:
+# In[37]:
 
 
 sorted_lh_scores = dict(sorted(lh_scores.items(), key=lambda item: item[1]))
