@@ -41,13 +41,13 @@
 
 # # Setup
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('capture', '', '%pip install git+https://github.com/neelnanda-io/TransformerLens.git\n')
 
 
-# In[2]:
+# In[ ]:
 
 
 import torch
@@ -55,7 +55,7 @@ import numpy as np
 from pathlib import Path
 
 
-# In[3]:
+# In[ ]:
 
 
 # import transformer_lens
@@ -69,19 +69,19 @@ import transformer_lens.utils as utils
 
 # # Load model
 
-# In[4]:
+# In[ ]:
 
 
 from transformers import LlamaForCausalLM, LlamaTokenizer
 
 
-# In[5]:
+# In[ ]:
 
 
 get_ipython().system('huggingface-cli login')
 
 
-# In[6]:
+# In[ ]:
 
 
 LLAMA_2_7B_CHAT_PATH = "meta-llama/Llama-2-7b-chat-hf"
@@ -90,7 +90,7 @@ tokenizer = LlamaTokenizer.from_pretrained(LLAMA_2_7B_CHAT_PATH)
 hf_model = LlamaForCausalLM.from_pretrained(LLAMA_2_7B_CHAT_PATH, low_cpu_mem_usage=True)
 
 
-# In[7]:
+# In[ ]:
 
 
 import transformer_lens.utils as utils
@@ -98,7 +98,7 @@ from transformer_lens.hook_points import HookPoint
 from transformer_lens import HookedTransformer
 
 
-# In[8]:
+# In[ ]:
 
 
 # Get list of arguments to pass to `generate` (specifically these are the ones relating to sampling)
@@ -109,7 +109,7 @@ generate_kwargs = dict(
 )
 
 
-# In[9]:
+# In[ ]:
 
 
 tl_model = HookedTransformer.from_pretrained(
@@ -129,7 +129,7 @@ tl_model = tl_model.to("cuda" if torch.cuda.is_available() else "cpu")
 
 # # spanish
 
-# In[10]:
+# In[ ]:
 
 
 prompt = "uno"
@@ -137,7 +137,7 @@ output = tl_model.generate(prompt, max_new_tokens=1, **generate_kwargs)
 print(output)
 
 
-# In[12]:
+# In[ ]:
 
 
 prompt = "uno dos"
@@ -145,7 +145,7 @@ output = tl_model.generate(prompt, max_new_tokens=1, **generate_kwargs)
 print(output)
 
 
-# In[11]:
+# In[ ]:
 
 
 prompt = "uno dos tres"
@@ -153,7 +153,7 @@ output = tl_model.generate(prompt, max_new_tokens=1, **generate_kwargs)
 print(output)
 
 
-# In[13]:
+# In[ ]:
 
 
 prompt = "uno dos tres cuatro cinco seis"
@@ -161,7 +161,7 @@ output = tl_model.generate(prompt, max_new_tokens=1, **generate_kwargs)
 print(output)
 
 
-# In[16]:
+# In[ ]:
 
 
 prompt = "uno mas tres"
@@ -169,7 +169,7 @@ output = tl_model.generate(prompt, max_new_tokens=2, **generate_kwargs)
 print(output)
 
 
-# In[17]:
+# In[ ]:
 
 
 prompt = "uno tres cinco"
@@ -179,7 +179,7 @@ print(output)
 
 # # German
 
-# In[20]:
+# In[ ]:
 
 
 prompt = "eins zwei drei"
@@ -187,7 +187,7 @@ output = tl_model.generate(prompt, max_new_tokens=5, **generate_kwargs)
 print(output)
 
 
-# In[21]:
+# In[ ]:
 
 
 prompt = "eins"
@@ -197,7 +197,7 @@ print(output)
 
 # # French
 
-# In[22]:
+# In[ ]:
 
 
 prompt = "un, deux, trois"
@@ -207,7 +207,7 @@ print(output)
 
 # # math reasoning
 
-# In[25]:
+# In[ ]:
 
 
 prompt = "Bob is three years older than Steve. If Bob is 6, how old is Steve?"
@@ -215,7 +215,7 @@ output = tl_model.generate(prompt, max_new_tokens=50, **generate_kwargs)
 print(output)
 
 
-# In[27]:
+# In[ ]:
 
 
 prompt = "Bob is three years older than Steve. If Bob is 6 then Steve is"
@@ -225,7 +225,7 @@ print(output)
 
 # # Days of week
 
-# In[28]:
+# In[ ]:
 
 
 prompt = "Today is Monday. What day comes next?"
@@ -233,7 +233,7 @@ output = tl_model.generate(prompt, max_new_tokens=50, **generate_kwargs)
 print(output)
 
 
-# In[43]:
+# In[ ]:
 
 
 prompt = "Today is Monday. In two days, it will be"
@@ -243,7 +243,7 @@ print(output)
 
 # # Distinguish Additive vs Multiplicative
 
-# In[34]:
+# In[ ]:
 
 
 prompt =  "2 4 6 8 10"
@@ -251,7 +251,7 @@ output = tl_model.generate(prompt, max_new_tokens=10, **generate_kwargs)
 print(output)
 
 
-# In[36]:
+# In[ ]:
 
 
 prompt =  "2 4 8 16 32"
@@ -269,7 +269,7 @@ print(output)
 
 # # less than
 
-# In[40]:
+# In[ ]:
 
 
 prompt =  "Bob is older than Steve. Bob is age 10 and Steve is age"
@@ -279,7 +279,7 @@ print(output)
 
 # # Fibonacci
 
-# In[45]:
+# In[ ]:
 
 
 prompt =  "0 1 1 2 3 5"
@@ -287,7 +287,7 @@ output = tl_model.generate(prompt, max_new_tokens=15, **generate_kwargs)
 print(output)
 
 
-# In[46]:
+# In[ ]:
 
 
 prompt =  "2 3 5 8"
