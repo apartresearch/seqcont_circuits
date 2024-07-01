@@ -60,7 +60,7 @@ import copy
 import itertools
 from transformers import AutoModelForCausalLM, AutoConfig, AutoTokenizer
 import dataclasses
-import datasets
+# import datasets
 from IPython.display import HTML
 
 
@@ -140,7 +140,7 @@ model = model.to("cuda" if torch.cuda.is_available() else "cpu")
 
 # # Load Dataset
 
-# In[18]:
+# In[12]:
 
 
 # nw = [
@@ -155,7 +155,7 @@ model = model.to("cuda" if torch.cuda.is_available() else "cpu")
 # prompts = ["{} {} {} {} {} {} {} {} {}".format(i, nw[i], i+1, nw[i+1], i+2, nw[i+2], i+3, nw[i+3], i+4) for i in range(0, 8)]
 
 
-# In[27]:
+# In[13]:
 
 
 # # inorder
@@ -172,7 +172,7 @@ model = model.to("cuda" if torch.cuda.is_available() else "cpu")
 # print(prompts)
 
 
-# In[49]:
+# In[14]:
 
 
 import random
@@ -205,7 +205,7 @@ print(prompts)
 print(len(prompts))
 
 
-# In[53]:
+# In[22]:
 
 
 tokens = model.to_tokens(prompts, prepend_bos=True)
@@ -217,13 +217,19 @@ local_tokens = tokens[0]
 token_list = model.to_str_tokens(local_tokens)
 
 
-# In[52]:
+# In[43]:
+
+
+token_list
+
+
+# In[23]:
 
 
 import gc
 
 del(original_logits)
-del(local_cache)
+# del(local_cache)
 torch.cuda.empty_cache()
 gc.collect()
 
@@ -232,7 +238,7 @@ gc.collect()
 
 # ## Index attn pat fns
 
-# In[22]:
+# In[19]:
 
 
 def get_ind(token_list, token1, token2, printInd=False):
@@ -253,7 +259,7 @@ def get_ind(token_list, token1, token2, printInd=False):
 
 # ## Number Detection/Similar Type Heads
 
-# In[32]:
+# In[50]:
 
 
 def visualize_attention_patterns(
@@ -268,6 +274,12 @@ def visualize_attention_patterns(
     local_tokens = tokens[0]
     str_tokens = model.to_str_tokens(local_tokens)
     str_tokens[0] = '<PAD>' # Rename the first token string as '<END>'
+    # Truncate token strings to max length of 3 characters
+    months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ]
+    str_tokens = [token[:3] if token in months else token for token in str_tokens]
 
     # Create a mask for the cells above the diagonal
     mask = np.triu(np.ones_like(patterns_np, dtype=bool), k=1)
@@ -290,6 +302,9 @@ def visualize_attention_patterns(
     # Move x-axis ticks to the top
     # ax.xaxis.tick_top()
     # ax.xaxis.set_label_position('top')
+
+    # Rotate y-axis labels to be horizontal
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
 
     ax.set_xlabel('Key', fontsize=16, fontweight='bold', labelpad=20)
     ax.set_ylabel('Query', fontsize=16, fontweight='bold', labelpad=20)
@@ -323,7 +338,7 @@ def visualize_attention_patterns(
     plt.show()
 
 
-# In[54]:
+# In[51]:
 
 
 visualize_attention_patterns(layer = 5, head_index = 25, highlightLines=True, savePlotName='attnpat1_5_among_months')

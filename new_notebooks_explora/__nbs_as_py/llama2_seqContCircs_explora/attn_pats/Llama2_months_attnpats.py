@@ -5,7 +5,7 @@
 
 # # Change Inputs Here
 
-# In[25]:
+# In[19]:
 
 
 task = "months"  # choose: numerals, numwords, months
@@ -21,7 +21,7 @@ save_files = True
 
 # # Setup
 
-# In[1]:
+# In[14]:
 
 
 import seaborn as sns
@@ -31,13 +31,13 @@ import numpy as np
 import pickle
 
 
-# In[2]:
+# In[15]:
 
 
 get_ipython().run_line_magic('pip', 'install git+https://github.com/neelnanda-io/TransformerLens.git')
 
 
-# In[3]:
+# In[16]:
 
 
 from transformer_lens import HookedTransformer
@@ -45,14 +45,14 @@ import torch
 torch.set_grad_enabled(False)  # turn automatic differentiation off
 
 
-# In[4]:
+# In[17]:
 
 
 get_ipython().system('git clone https://github.com/apartresearch/seqcont_circuits.git')
 get_ipython().run_line_magic('cd', '/content/seqcont_circuits/src/attn_pats')
 
 
-# In[46]:
+# In[18]:
 
 
 from viz_attn_pat import *
@@ -139,7 +139,7 @@ model = model.to("cuda" if torch.cuda.is_available() else "cpu")
 
 # # Dataset
 
-# In[26]:
+# In[20]:
 
 
 prompts_list = []
@@ -156,7 +156,7 @@ prompts = [prompt['text'] for prompt in prompts_list]
 print(len(prompts))
 
 
-# In[29]:
+# In[23]:
 
 
 tokens = model.to_tokens(prompts, prepend_bos=True)
@@ -166,13 +166,13 @@ tokens = model.to_tokens(prompts, prepend_bos=True)
 original_logits, local_cache = model.run_with_cache(tokens) # Run the model and cache all activations
 
 
-# In[28]:
+# In[24]:
 
 
 import gc
 
 del(original_logits)
-del(local_cache)
+# del(local_cache)
 torch.cuda.empty_cache()
 gc.collect()
 
@@ -181,7 +181,7 @@ gc.collect()
 
 # ## viz
 
-# In[53]:
+# In[25]:
 
 
 import seaborn as sns
@@ -298,7 +298,7 @@ def viz_attn_pat(
 
 # ## Index attn pat fns
 
-# In[48]:
+# In[26]:
 
 
 # Tokenized sentence is stored in token_list and the tokens you are interested in are token1 and token2
@@ -309,7 +309,7 @@ local_tokens = tokens[0]
 token_list = model.to_str_tokens(local_tokens)
 
 
-# In[49]:
+# In[27]:
 
 
 def get_attn_val(token_list, token1, token2, layer, head_index):
@@ -330,7 +330,7 @@ def get_attn_val(token_list, token1, token2, layer, head_index):
 get_attn_val(token_list, token1, token2, 4, 4)
 
 
-# In[50]:
+# In[28]:
 
 
 def get_attn_val_fromEnd(token_list, token2, layer, head_index):
@@ -352,7 +352,7 @@ get_attn_val_fromEnd(token_list, token1, 9, 1)
 get_attn_val_fromEnd(token_list, token2, 9, 1)
 
 
-# In[51]:
+# In[29]:
 
 
 get_ind(token_list, token1, token2, printInd=True)
@@ -362,7 +362,7 @@ get_ind(token_list, token1, token2, printInd=True)
 
 # ## Number Detection/Similar Type Heads
 
-# In[58]:
+# In[ ]:
 
 
 layer = 5
@@ -384,7 +384,7 @@ viz_attn_pat(
 
 # ## Duplicate Heads
 
-# In[64]:
+# In[ ]:
 
 
 def viz_attnPat_dupl(
@@ -430,7 +430,7 @@ def viz_attnPat_dupl(
     plt.show()
 
 
-# In[65]:
+# In[ ]:
 
 
 viz_attnPat_dupl(layer = 6, head_index = 11)
@@ -440,7 +440,7 @@ viz_attnPat_dupl(layer = 6, head_index = 11)
 
 # Notice the last token in the sequence (last row) pays attention to the most recent seq members.
 
-# In[66]:
+# In[ ]:
 
 
 layer = 11
@@ -457,11 +457,28 @@ viz_attn_pat(
 )
 
 
+# In[30]:
+
+
+layer = 16
+head_ind = 0
+viz_attn_pat(
+    model,
+    tokens,
+    local_cache,
+    layer,
+    head_ind,
+    task,
+    highlightLines = 'mid',
+    savePlotName = f'attnpat{layer}_{head_ind}_{task}'
+)
+
+
 # This pays attention to all numbers except the first seq member; albeit, not that strong for each. More recent seq members are stronger.
 
 # # Late heads
 
-# In[68]:
+# In[ ]:
 
 
 layer = 20

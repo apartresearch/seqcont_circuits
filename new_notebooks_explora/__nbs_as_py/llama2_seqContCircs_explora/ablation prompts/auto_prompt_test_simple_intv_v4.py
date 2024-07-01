@@ -3,7 +3,7 @@
 
 # # Setup
 
-# In[1]:
+# In[ ]:
 
 
 save_files = True
@@ -644,18 +644,6 @@ def ablate_then_gen(model, clean_text, corr_text, heads_not_ablate, mlps_not_abl
 # In[ ]:
 
 
-# Function to randomly choose 50 pairs ensuring less than 10 overlap with heads_of_circ
-def choose_heads_to_remove(filtered_pairs, heads_of_circ, num_pairs=50, max_overlap=10):
-    while True:
-        head_to_remove = random.sample(filtered_pairs, num_pairs)
-        overlap_count = len([head for head in head_to_remove if head in heads_of_circ])
-        if overlap_count < max_overlap:
-            return head_to_remove
-
-
-# In[ ]:
-
-
 answer_str = '10'
 ans_str_tok = tokenizer.tokenize(answer_str)[1:]
 ans_str_tok
@@ -764,7 +752,8 @@ def ablate_auto_score(model, clean_text, corr_text, heads_not_ablate, mlps_not_a
         total_score += corrTok_logits
         # print(f"corr logit of new char: {new_score}")
     # print('\n Total corr logit: ', total_score.item())
-    return ans_so_far, total_score.item()
+    # return ans_so_far, total_score.item()
+    return ans_so_far
 
 
 # # Define circs
@@ -808,166 +797,6 @@ union_all = list(set(nums_1to9) | set(nw_circ) | set(months_circ))
 len(union_all)
 
 
-# # auto measure
-
-# In[ ]:
-
-
-clean_text = "2 4 6"
-corr_text = "5 3 9"
-
-correct_ans = "8"
-correct_ans_tokLen = clean_gen(model, clean_text, correct_ans)
-
-
-# In[ ]:
-
-
-heads_not_ablate = [(layer, head) for layer in range(32) for head in range(32)]  # unablated
-head_to_remove = intersect_all
-heads_not_ablate = [x for x in heads_not_ablate if (x not in head_to_remove)]
-
-mlps_not_ablate = [layer for layer in range(32)]
-
-output_after_ablate = ablate_auto_score(model, clean_text, corr_text, heads_not_ablate, mlps_not_ablate, correct_ans_tokLen)
-print(output_after_ablate)
-
-correct_ans == output_after_ablate
-
-
-# In[ ]:
-
-
-heads_not_ablate = [(layer, head) for layer in range(32) for head in range(32)]  # unablated
-head_to_remove = nums_1to9
-heads_not_ablate = [x for x in heads_not_ablate if (x not in head_to_remove)]
-
-mlps_not_ablate = [layer for layer in range(32)]
-
-output_after_ablate = ablate_auto_score(model, clean_text, corr_text, heads_not_ablate, mlps_not_ablate, correct_ans_tokLen)
-print(output_after_ablate)
-
-correct_ans == output_after_ablate
-
-
-# In[ ]:
-
-
-# Step 1: Generate the sequences
-sequences = []
-next_members = []
-
-# Let's start from 2 and generate sequences that add 2 for each member
-start = 2
-
-# Generate 20 overlapping intervals
-for _ in range(20):
-    sequence = [start, start + 2, start + 4]
-    next_member = str(start + 6)
-    sequences.append(sequence)
-    next_members.append(next_member)
-    start += 2  # Move to the next starting point
-
-# Convert the sequences to the required format
-sequences_as_str = [" ".join(map(str, seq)) for seq in sequences]
-
-# Step 2: Display the results
-print("Sequences:")
-print(sequences_as_str)
-print("\nNext Members:")
-print(next_members)
-
-
-# In[ ]:
-
-
-list_outputs = []
-score = 0
-for clean_text, correct_ans in zip(sequences_as_str, next_members):
-    correct_ans_tokLen = clean_gen(model, clean_text, correct_ans)
-    heads_not_ablate = [(layer, head) for layer in range(32) for head in range(32)]  # unablated
-    # head_to_remove = nums_1to9
-    # heads_not_ablate = [x for x in heads_not_ablate if (x not in head_to_remove)]
-
-    mlps_not_ablate = [layer for layer in range(32)]
-
-    output_after_ablate = ablate_auto_score(model, clean_text, corr_text, heads_not_ablate, mlps_not_ablate, correct_ans_tokLen)
-    list_outputs.append(output_after_ablate)
-    # print(correct_ans, output_after_ablate)
-    if correct_ans == output_after_ablate:
-        score += 1
-
-
-# In[ ]:
-
-
-score / len(next_members)
-
-
-# In[ ]:
-
-
-list_outputs = []
-score = 0
-for clean_text, correct_ans in zip(sequences_as_str, next_members):
-    correct_ans_tokLen = clean_gen(model, clean_text, correct_ans)
-    heads_not_ablate = [(layer, head) for layer in range(32) for head in range(32)]  # unablated
-    head_to_remove = nums_1to9
-    heads_not_ablate = [x for x in heads_not_ablate if (x not in head_to_remove)]
-
-    mlps_not_ablate = [layer for layer in range(32)]
-
-    output_after_ablate = ablate_auto_score(model, clean_text, corr_text, heads_not_ablate, mlps_not_ablate, correct_ans_tokLen)
-    list_outputs.append(output_after_ablate)
-    print(correct_ans, output_after_ablate)
-    if correct_ans == output_after_ablate:
-        score += 1
-
-
-# In[ ]:
-
-
-score / len(next_members)
-
-
-# In[ ]:
-
-
-# list_outputs = []
-all_scores = []
-num_rand_runs = 5
-for clean_text, correct_ans in zip(sequences_as_str, next_members):
-    prompt_score = 0
-    correct_ans_tokLen = clean_gen(model, clean_text, correct_ans)
-    for j in range(num_rand_runs):
-        heads_of_circ = union_all
-
-        all_possible_pairs =  [(layer, head) for layer in range(32) for head in range(32)]
-        # Filter out heads_of_circ from all_possible_pairs
-        filtered_pairs = [pair for pair in all_possible_pairs if pair not in heads_of_circ]
-
-        # Randomly choose 100 pairs ensuring less than 50 overlaps with heads_of_circ
-        head_to_remove = choose_heads_to_remove(filtered_pairs, heads_of_circ, 100, 50)
-
-        heads_not_ablate = [x for x in all_possible_pairs if x not in head_to_remove]
-
-        mlps_not_ablate = [layer for layer in range(32)]
-
-        output_after_ablate = ablate_auto_score(model, clean_text, corr_text, heads_not_ablate, mlps_not_ablate, correct_ans_tokLen)
-        # list_outputs.append(output_after_ablate)
-        # print(correct_ans, output_after_ablate)
-        if correct_ans == output_after_ablate:
-            prompt_score += 1
-    print(prompt_score / num_rand_runs)
-    all_scores.append(prompt_score / num_rand_runs)
-
-
-# In[ ]:
-
-
-sum(all_scores) / len(next_members)
-
-
 # # turn into fn
 
 # In[ ]:
@@ -981,7 +810,7 @@ def ablate_circ_autoScore(model, circuit, sequences_as_str, next_members):
     total_abl_logits = 0
     for clean_text, correct_ans in zip(sequences_as_str, next_members):
         # correct_ans_tokLen, orig_score = clean_gen(model, clean_text, correct_ans)
-        orig_score = clean_gen(model, clean_text, correct_ans)
+        # orig_score = clean_gen(model, clean_text, correct_ans)
 
         heads_not_ablate = [(layer, head) for layer in range(32) for head in range(32)]  # unablated
         head_to_remove = circuit
@@ -991,15 +820,16 @@ def ablate_circ_autoScore(model, circuit, sequences_as_str, next_members):
 
         output_after_ablate, ablated_score = ablate_auto_score(model, clean_text, corr_text, heads_not_ablate, mlps_not_ablate, correct_ans)
         list_outputs.append(output_after_ablate)
-        total_orig_logits += orig_score
-        total_abl_logits += ablated_score
+        # total_orig_logits += orig_score
+        # total_abl_logits += ablated_score
         print(correct_ans, output_after_ablate)
         # print(orig_score, ablated_score)
-        print('logit ratio: ', ablated_score / orig_score)
+        # print('logit ratio: ', ablated_score / orig_score)
         if correct_ans == output_after_ablate:
             score += 1
     perc_score = score / len(next_members)
-    return perc_score, list_outputs, total_abl_logits / total_orig_logits
+    # return perc_score, list_outputs, total_abl_logits / total_orig_logits
+    return perc_score
 
 
 # In[ ]:
@@ -1007,11 +837,11 @@ def ablate_circ_autoScore(model, circuit, sequences_as_str, next_members):
 
 def ablate_randcirc_autoScore(model, sequences_as_str, next_members, num_rand_runs, heads_not_overlap, num_heads_rand, num_not_overlap):
     corr_text = "5 3 9"
-    list_outputs = []
+    # list_outputs = []
     all_scores = []
     for clean_text, correct_ans in zip(sequences_as_str, next_members):
         prompt_score = 0
-        correct_ans_tokLen = clean_gen(model, clean_text, correct_ans)
+        # correct_ans_tokLen = clean_gen(model, clean_text, correct_ans)
         for j in range(num_rand_runs):
             all_possible_pairs =  [(layer, head) for layer in range(32) for head in range(32)]
             filtered_pairs = [pair for pair in all_possible_pairs if pair not in heads_not_overlap] # Filter out heads_not_overlap from all_possible_pairs
@@ -1023,16 +853,52 @@ def ablate_randcirc_autoScore(model, sequences_as_str, next_members, num_rand_ru
 
             mlps_not_ablate = [layer for layer in range(32)]
 
-            output_after_ablate = ablate_auto_score(model, clean_text, corr_text, heads_not_ablate, mlps_not_ablate, correct_ans_tokLen)
+            output_after_ablate = ablate_auto_score(model, clean_text, corr_text, heads_not_ablate, mlps_not_ablate, correct_ans)
             # list_outputs.append(output_after_ablate)
             # print(correct_ans, output_after_ablate)
             if correct_ans == output_after_ablate:
                 prompt_score += 1
-        print(prompt_score / num_rand_runs)
+        # print(prompt_score / num_rand_runs)
+        print(clean_text)
         all_scores.append(prompt_score / num_rand_runs)
 
     perc_score = sum(all_scores) / len(next_members)
-    return perc_score, list_outputs
+    return perc_score #, list_outputs
+
+
+# In[ ]:
+
+
+def ablate_randcirc_autoScore_2(model, sequences_as_str, next_members, lst_rand_head_to_remove):
+    corr_text = "5 3 9"
+    # list_outputs = []
+    all_scores = []
+    for clean_text, correct_ans in zip(sequences_as_str, next_members):
+        prompt_score = 0
+        # correct_ans_tokLen = clean_gen(model, clean_text, correct_ans)
+        # for j in range(num_rand_runs):
+        for head_to_remove in lst_rand_head_to_remove:
+            # all_possible_pairs =  [(layer, head) for layer in range(32) for head in range(32)]
+            # filtered_pairs = [pair for pair in all_possible_pairs if pair not in heads_not_overlap] # Filter out heads_not_overlap from all_possible_pairs
+
+            # # Randomly choose num_heads_rand pairs ensuring less than num_not_overlap overlaps with heads_not_overlap
+            # head_to_remove = choose_heads_to_remove(filtered_pairs, heads_not_overlap, num_heads_rand, num_not_overlap)
+
+            heads_not_ablate = [x for x in all_possible_pairs if x not in head_to_remove]
+
+            mlps_not_ablate = [layer for layer in range(32)]
+
+            output_after_ablate = ablate_auto_score(model, clean_text, corr_text, heads_not_ablate, mlps_not_ablate, correct_ans)
+            # list_outputs.append(output_after_ablate)
+            # print(correct_ans, output_after_ablate)
+            if correct_ans == output_after_ablate:
+                prompt_score += 1
+        # print(prompt_score / num_rand_runs)
+        print(clean_text)
+        all_scores.append(prompt_score / len(lst_rand_head_to_remove))
+
+    perc_score = sum(all_scores) / len(next_members)
+    return perc_score #, list_outputs
 
 
 # In[ ]:
@@ -1059,6 +925,101 @@ def gen_intervaled_seqs(interval, start, num_prompts):
     return sequences_as_str, next_members
 
 
+# # chose rand circs
+
+# In[ ]:
+
+
+# Function to randomly choose 50 pairs ensuring less than 10 overlap with heads_of_circ
+def choose_heads_to_remove(filtered_pairs, heads_of_circ, num_pairs=50, max_overlap=10):
+    while True:
+        head_to_remove = random.sample(filtered_pairs, num_pairs)
+        overlap_count = len([head for head in head_to_remove if head in heads_of_circ])
+        if overlap_count < max_overlap:
+            return head_to_remove
+
+
+# In[ ]:
+
+
+import random
+num_rand_runs = 50
+lst_rand_head_to_remove = []
+
+heads_not_overlap = intersect_all
+num_heads_rand = 100
+num_not_overlap = len(intersect_all)
+for j in range(num_rand_runs):
+    all_possible_pairs =  [(layer, head) for layer in range(32) for head in range(32)]
+    filtered_pairs = [pair for pair in all_possible_pairs if pair not in heads_not_overlap] # Filter out heads_not_overlap from all_possible_pairs
+    head_to_remove = choose_heads_to_remove(filtered_pairs, heads_not_overlap, num_heads_rand, num_not_overlap)
+    # heads_not_ablate = [x for x in all_possible_pairs if x not in head_to_remove]
+    lst_rand_head_to_remove.append(head_to_remove)
+
+
+# In[ ]:
+
+
+import pickle
+from google.colab import files
+with open('lst_rand_head_to_remove.pkl', 'wb') as file:
+    pickle.dump(lst_rand_head_to_remove, file)
+files.download('lst_rand_head_to_remove.pkl')
+
+
+# In[ ]:
+
+
+for lst in lst_rand_head_to_remove:
+    print(lst)
+
+
+# # test fns on (+1) seq
+
+# In[ ]:
+
+
+interval = 1
+start = 1
+num_prompts = 50
+sequences_as_str, next_members = gen_intervaled_seqs(interval, start, num_prompts)
+
+
+# In[ ]:
+
+
+perc_score = ablate_circ_autoScore(model, intersect_all, sequences_as_str, next_members)
+print(perc_score)
+
+
+# In[ ]:
+
+
+perc_score = ablate_circ_autoScore(model, nums_1to9, sequences_as_str, next_members)
+print(perc_score)
+
+
+# In[ ]:
+
+
+perc_score = ablate_circ_autoScore(model, nw_circ, sequences_as_str, next_members)
+perc_score
+
+
+# In[ ]:
+
+
+perc_score = ablate_circ_autoScore(model, months_circ, sequences_as_str, next_members)
+perc_score
+
+
+# In[ ]:
+
+
+perc_score = ablate_randcirc_autoScore_2(model, sequences_as_str, next_members, lst_rand_head_to_remove)
+perc_score
+
+
 # # test fns on (+2) seq
 
 # In[ ]:
@@ -1066,57 +1027,42 @@ def gen_intervaled_seqs(interval, start, num_prompts):
 
 interval = 2
 start = 2
-num_prompts = 20
+num_prompts = 50
 sequences_as_str, next_members = gen_intervaled_seqs(interval, start, num_prompts)
 
 
 # In[ ]:
 
 
-perc_score, list_outputs, logit_ratio = ablate_circ_autoScore(model, [], sequences_as_str, next_members)
+perc_score = ablate_circ_autoScore(model, intersect_all, sequences_as_str, next_members)
 print(perc_score)
-logit_ratio
 
 
 # In[ ]:
 
 
-perc_score, list_outputs, logit_ratio = ablate_circ_autoScore(model, intersect_all, sequences_as_str, next_members)
+perc_score = ablate_circ_autoScore(model, nums_1to9, sequences_as_str, next_members)
 print(perc_score)
-logit_ratio
 
 
 # In[ ]:
 
 
-perc_score, list_outputs, logit_ratio = ablate_circ_autoScore(model, nums_1to9, sequences_as_str, next_members)
-print(perc_score)
-logit_ratio
-
-
-# In[ ]:
-
-
-perc_score, list_outputs = ablate_circ_autoScore(model, nw_circ, sequences_as_str, next_members)
+perc_score = ablate_circ_autoScore(model, nw_circ, sequences_as_str, next_members)
 perc_score
 
 
 # In[ ]:
 
 
-perc_score, list_outputs = ablate_circ_autoScore(model, months_circ, sequences_as_str, next_members)
+perc_score = ablate_circ_autoScore(model, months_circ, sequences_as_str, next_members)
 perc_score
 
 
 # In[ ]:
 
 
-num_rand_runs = 5
-heads_not_overlap = intersect_all
-num_heads_rand = len(intersect_all)
-num_not_overlap = len(intersect_all)
-perc_score, list_outputs = ablate_randcirc_autoScore(model, sequences_as_str[:10], next_members[:10],
-                                                    num_rand_runs, heads_not_overlap, num_heads_rand, num_not_overlap)
+perc_score = ablate_randcirc_autoScore_2(model, sequences_as_str, next_members, lst_rand_head_to_remove)
 perc_score
 
 
@@ -1127,47 +1073,42 @@ perc_score
 
 interval = 3
 start = 3
-num_prompts = 20
+num_prompts = 50
 sequences_as_str, next_members = gen_intervaled_seqs(interval, start, num_prompts)
 
 
 # In[ ]:
 
 
-perc_score, list_outputs = ablate_circ_autoScore(model, intersect_all, sequences_as_str, next_members)
+perc_score = ablate_circ_autoScore(model, intersect_all, sequences_as_str, next_members)
+print(perc_score)
+
+
+# In[ ]:
+
+
+perc_score = ablate_circ_autoScore(model, nums_1to9, sequences_as_str, next_members)
+print(perc_score)
+
+
+# In[ ]:
+
+
+perc_score = ablate_circ_autoScore(model, nw_circ, sequences_as_str, next_members)
 perc_score
 
 
 # In[ ]:
 
 
-perc_score, list_outputs = ablate_circ_autoScore(model, nums_1to9, sequences_as_str, next_members)
+perc_score = ablate_circ_autoScore(model, months_circ, sequences_as_str, next_members)
 perc_score
 
 
 # In[ ]:
 
 
-perc_score, list_outputs = ablate_circ_autoScore(model, nw_circ, sequences_as_str, next_members)
-perc_score
-
-
-# In[ ]:
-
-
-perc_score, list_outputs = ablate_circ_autoScore(model, months_circ, sequences_as_str, next_members)
-perc_score
-
-
-# In[ ]:
-
-
-num_rand_runs = 5
-heads_not_overlap = intersect_all
-num_heads_rand = len(intersect_all)
-num_not_overlap = len(intersect_all)
-perc_score, list_outputs = ablate_randcirc_autoScore(model, sequences_as_str[:10], next_members[:10],
-                                                    num_rand_runs, heads_not_overlap, num_heads_rand, num_not_overlap)
+perc_score = ablate_randcirc_autoScore_2(model, sequences_as_str, next_members, lst_rand_head_to_remove)
 perc_score
 
 
@@ -1178,47 +1119,42 @@ perc_score
 
 interval = 10
 start = 0
-num_prompts = 10
+num_prompts = 50
 sequences_as_str, next_members = gen_intervaled_seqs(interval, start, num_prompts)
 
 
 # In[ ]:
 
 
-perc_score, list_outputs = ablate_circ_autoScore(model, intersect_all, sequences_as_str, next_members)
+perc_score = ablate_circ_autoScore(model, intersect_all, sequences_as_str, next_members)
+print(perc_score)
+
+
+# In[ ]:
+
+
+perc_score = ablate_circ_autoScore(model, nums_1to9, sequences_as_str, next_members)
+print(perc_score)
+
+
+# In[ ]:
+
+
+perc_score = ablate_circ_autoScore(model, nw_circ, sequences_as_str, next_members)
 perc_score
 
 
 # In[ ]:
 
 
-perc_score, list_outputs = ablate_circ_autoScore(model, nums_1to9, sequences_as_str, next_members)
+perc_score = ablate_circ_autoScore(model, months_circ, sequences_as_str, next_members)
 perc_score
 
 
 # In[ ]:
 
 
-perc_score, list_outputs = ablate_circ_autoScore(model, nw_circ, sequences_as_str, next_members)
-perc_score
-
-
-# In[ ]:
-
-
-perc_score, list_outputs = ablate_circ_autoScore(model, months_circ, sequences_as_str, next_members)
-perc_score
-
-
-# In[ ]:
-
-
-num_rand_runs = 5
-heads_not_overlap = intersect_all
-num_heads_rand = len(intersect_all)
-num_not_overlap = len(intersect_all)
-perc_score, list_outputs = ablate_randcirc_autoScore(model, sequences_as_str[:10], next_members[:10],
-                                                    num_rand_runs, heads_not_overlap, num_heads_rand, num_not_overlap)
+perc_score = ablate_randcirc_autoScore_2(model, sequences_as_str, next_members, lst_rand_head_to_remove)
 perc_score
 
 
@@ -1229,7 +1165,7 @@ perc_score
 
 interval = 100
 start = 0
-num_prompts = 5
+num_prompts = 50
 sequences_as_str, next_members = gen_intervaled_seqs(interval, start, num_prompts)
 
 
@@ -1264,11 +1200,6 @@ perc_score
 # In[ ]:
 
 
-num_rand_runs = 5
-heads_not_overlap = intersect_all
-num_heads_rand = len(intersect_all)
-num_not_overlap = len(intersect_all)
-perc_score, list_outputs = ablate_randcirc_autoScore(model, sequences_as_str[:10], next_members[:10],
-                                                    num_rand_runs, heads_not_overlap, num_heads_rand, num_not_overlap)
+perc_score = ablate_randcirc_autoScore_2(model, sequences_as_str, next_members, lst_rand_head_to_remove)
 perc_score
 

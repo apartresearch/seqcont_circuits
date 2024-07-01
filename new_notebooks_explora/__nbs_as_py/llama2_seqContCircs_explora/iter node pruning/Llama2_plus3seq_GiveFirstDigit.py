@@ -7,13 +7,13 @@
 
 # # Setup
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('capture', '', '%pip install git+https://github.com/neelnanda-io/TransformerLens.git\n')
 
 
-# In[2]:
+# In[ ]:
 
 
 import torch
@@ -47,7 +47,7 @@ import matplotlib.pyplot as plt
 import statistics
 
 
-# In[3]:
+# In[ ]:
 
 
 import transformer_lens
@@ -61,13 +61,13 @@ from transformer_lens import HookedTransformer, HookedTransformerConfig, Factore
 
 # We turn automatic differentiation off, to save GPU memory, as this notebook focuses on model inference not model training.
 
-# In[4]:
+# In[ ]:
 
 
 torch.set_grad_enabled(False)
 
 
-# In[5]:
+# In[ ]:
 
 
 save_files = True
@@ -75,19 +75,19 @@ save_files = True
 
 # # Load Model
 
-# In[6]:
+# In[ ]:
 
 
 from transformers import LlamaForCausalLM, LlamaTokenizer
 
 
-# In[7]:
+# In[ ]:
 
 
 get_ipython().system('huggingface-cli login')
 
 
-# In[8]:
+# In[ ]:
 
 
 LLAMA_2_7B_CHAT_PATH = "meta-llama/Llama-2-7b-chat-hf"
@@ -97,7 +97,7 @@ tokenizer = LlamaTokenizer.from_pretrained(LLAMA_2_7B_CHAT_PATH)
 hf_model = LlamaForCausalLM.from_pretrained(LLAMA_2_7B_CHAT_PATH, low_cpu_mem_usage=True)
 
 
-# In[9]:
+# In[ ]:
 
 
 import transformer_lens.utils as utils
@@ -105,7 +105,7 @@ from transformer_lens.hook_points import HookPoint
 from transformer_lens import HookedTransformer
 
 
-# In[10]:
+# In[ ]:
 
 
 model = HookedTransformer.from_pretrained(
@@ -157,14 +157,14 @@ print(output)
 
 # # Import functions from repo
 
-# In[11]:
+# In[ ]:
 
 
 get_ipython().system('git clone https://github.com/apartresearch/seqcont_circuits.git')
 get_ipython().run_line_magic('cd', '/content/seqcont_circuits/src/iter_node_pruning')
 
 
-# In[12]:
+# In[ ]:
 
 
 # from dataset import Dataset
@@ -177,7 +177,7 @@ from loop_node_ablation_fns import *
 
 # ## redefine logit diff to use last tok
 
-# In[13]:
+# In[ ]:
 
 
 def get_logit_diff(logits: Float[Tensor, "batch seq d_vocab"], dataset: Dataset, per_prompt=False):
@@ -191,7 +191,7 @@ def get_logit_diff(logits: Float[Tensor, "batch seq d_vocab"], dataset: Dataset,
 
 # ## redefine dataset to not pad first tok
 
-# In[14]:
+# In[ ]:
 
 
 class Dataset:
@@ -256,13 +256,13 @@ class Dataset:
 
 # # Load datasets
 
-# In[15]:
+# In[ ]:
 
 
 tokenizer.tokenize('20')[1:]
 
 
-# In[16]:
+# In[ ]:
 
 
 i=2
@@ -272,7 +272,7 @@ f"{i} {i+2} {i+4} {i+6} " + corr_ans[0]
 
 # Because llama-2 tokenizer treats space as a token, remember to ablate even the spaces too, not just the numbers!
 
-# In[17]:
+# In[ ]:
 
 
 def generate_prompts_list(x ,y):
@@ -303,7 +303,7 @@ print(len(prompts_list))
 prompts_list
 
 
-# In[18]:
+# In[ ]:
 
 
 import random
@@ -337,14 +337,14 @@ prompts_list_2 = generate_prompts_list_corr(prompts_list)
 prompts_list_2
 
 
-# In[19]:
+# In[ ]:
 
 
 dataset = Dataset(prompts_list, model.tokenizer)
 dataset.toks.shape
 
 
-# In[20]:
+# In[ ]:
 
 
 dataset_2 = Dataset(prompts_list_2, model.tokenizer) #, S1_is_first=True)
@@ -353,7 +353,7 @@ dataset_2.toks.shape
 
 # # Get orig score
 
-# In[21]:
+# In[ ]:
 
 
 model.reset_hooks(including_permanent=True)
@@ -361,7 +361,7 @@ logits_original = model(dataset.toks)
 orig_score = get_logit_diff(logits_original, dataset)
 
 
-# In[22]:
+# In[ ]:
 
 
 next_token = logits_original[0, -1].argmax(dim=-1)  # logits have shape [1, sequence_length, vocab_size]
@@ -369,13 +369,13 @@ next_char = model.to_string(next_token)
 print(repr(next_char))
 
 
-# In[23]:
+# In[ ]:
 
 
 orig_score
 
 
-# In[24]:
+# In[ ]:
 
 
 import gc
@@ -590,7 +590,7 @@ for i in range(32):
 
 # ## new fns
 
-# In[25]:
+# In[ ]:
 
 
 # from dataset import Dataset
@@ -749,12 +749,12 @@ old_circ_mlps = curr_circ_mlps.copy()
 curr_circ_heads, curr_circ_mlps, new_score, comp_scores = find_circ_backw_attnL_thenHeads(model, dataset, dataset_2, curr_circ_heads, curr_circ_mlps, orig_score, threshold)
 
 
-# In[ ]:
+# In[35]:
 
 
-with open('plus2seq_GiveFirstDigit_b_20_scores.pkl', 'wb') as file:
+with open('plus3seq_GiveFirstDigit_b_20_scores.pkl', 'wb') as file:
     pickle.dump(all_comp_scores, file)
-files.download('plus2seq_GiveFirstDigit_b_20_scores.pkl')
+files.download('plus3seq_GiveFirstDigit_b_20_scores.pkl')
 
 
 # In[ ]:
@@ -783,7 +783,7 @@ circ_score = (100 * new_score / orig_score).item()
 print(f"(cand circuit / full) %: {circ_score:.4f}")
 
 
-# In[ ]:
+# In[31]:
 
 
 lh_scores = {}
@@ -801,7 +801,7 @@ for lh in curr_circ_heads:
     lh_scores[lh] = new_perc
 
 
-# In[ ]:
+# In[32]:
 
 
 sorted_lh_scores = dict(sorted(lh_scores.items(), key=lambda item: item[1]))
@@ -811,7 +811,7 @@ for lh, score in sorted_lh_scores.items():
 
 # ## find most impt mlps from circ
 
-# In[ ]:
+# In[33]:
 
 
 mlp_scores = {}
@@ -829,7 +829,7 @@ for i in curr_circ_mlps:
     mlp_scores[i] = new_perc
 
 
-# In[ ]:
+# In[34]:
 
 
 sorted_mlp_scores = dict(sorted(mlp_scores.items(), key=lambda item: item[1]))
