@@ -47,3 +47,17 @@ python run_attn_pats.py --model "gpt2-small" --task "numerals" --num_samps 128
 python run_logit_lens.py --model "gpt2" --task "numerals" --num_samps 512
 ```
 
+## Citation
+
+If you use this work in your research, please cite:
+
+```bibtex
+@misc{lan2024interpretablesequencecontinuationanalyzing,
+      title={Towards Interpretable Sequence Continuation: Analyzing Shared Circuits in Large Language Models}, 
+      author={Michael Lan and Philip Torr and Fazl Barez},
+      year={2024},
+      eprint={2311.04131},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2311.04131}, 
+}
